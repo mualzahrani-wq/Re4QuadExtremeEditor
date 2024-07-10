@@ -38,6 +38,9 @@
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>Re4QuadExtremeEditor.Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -153,6 +156,18 @@
     <Compile Include="src\Class\TreeNodeObj\SpecialNodeGroup.cs" />
     <Compile Include="src\Class\TreeNodeObj\TreeNodeGroup.cs" />
     <Compile Include="src\Consts.cs" />
+  <Compile Include="src\Controls\Advertising2Control.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="src\Controls\Advertising2Control.Designer.cs">
+      <DependentUpon>Advertising2Control.cs</DependentUpon>
+    </Compile>
+    <Compile Include="src\Controls\Advertising1Control.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="src\Controls\Advertising1Control.Designer.cs">
+      <DependentUpon>Advertising1Control.cs</DependentUpon>
+    </Compile>
     <Compile Include="src\Controls\CameraMoveControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -248,6 +263,12 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="src\Controls\Advertising2Control.resx">
+      <DependentUpon>Advertising2Control.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="src\Controls\Advertising1Control.resx">
+      <DependentUpon>Advertising1Control.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="src\Controls\CameraMoveControl.resx">
       <DependentUpon>CameraMoveControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -298,8 +319,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon4b.ico" />
-    <Content Include="mudancas.txt" />
-    <Content Include="planejamento2.txt" />
     <None Include="Resources\img\SquareRedLookVertical.png" />
     <None Include="Resources\img\SquareRedLookHorisontal.png" />
     <None Include="Resources\img\VerticalRed.png" />

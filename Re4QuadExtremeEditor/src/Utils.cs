@@ -346,9 +346,7 @@ namespace Re4QuadExtremeEditor.src
             Dictionary<ushort, UshortObjForListBox> EtcModels = new Dictionary<ushort, UshortObjForListBox>();
             foreach (var item in DataBase.EtcModelIDs)
             {
-                string ID = item.Value.GameId.ToString("X4");
-                if (ID[2] == 'F' && ID[3] == 'F') { continue; }
-                if (ID == "FFFF") { continue; }
+                if (item.Value.GameId == ushort.MaxValue) { continue; }
                 EtcModels.Add(item.Value.GameId, new UshortObjForListBox(item.Value.GameId, item.Value.GameId.ToString("X4") + ": " + item.Value.Description));
             }
             EtcModels = EtcModels.OrderBy(o => o.Key).ToDictionary(p => p.Key, p => p.Value);

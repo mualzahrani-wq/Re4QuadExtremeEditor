@@ -9,26 +9,15 @@ using System.Globalization;
 
 namespace Re4QuadExtremeEditor.src.Class.MyProperty
 {
-    //[DefaultPropertyAttribute("None")]
     public class NoneProperty : GenericProperty
     {
-        /*
-        [CategoryAttribute("None")]
-        [DescriptionAttribute("None")]
-        [DisplayNameAttribute("None")]
-        [DefaultValueAttribute(null)]
-        [ReadOnlyAttribute(true)]
-        [BrowsableAttribute(true)]
-        public string None { get => "None"; }
-        */
-
         [CategoryAttribute("Info")]
         [DescriptionAttribute("")]
-        [DisplayNameAttribute("Re4 Quad Extreme Editor")]
+        [DisplayNameAttribute("Re4 Quad Extreme Editor [Old Version]")]
         [DefaultValueAttribute(null)]
         [ReadOnlyAttribute(true)]
         [BrowsableAttribute(true)]
-        public string Version { get => "Version: 1.0.2"; }
+        public string Version { get => "Version: 1.0.3"; }
 
         [CategoryAttribute("Info")]
         [DescriptionAttribute("")]
@@ -59,6 +48,47 @@ namespace Re4QuadExtremeEditor.src.Class.MyProperty
             }}
 
 
+        //JADERLINK
+
+        [CategoryAttribute("JADERLINK")]
+        [DescriptionAttribute("")]
+        [DisplayNameAttribute("Tool created by:")]
+        [DefaultValueAttribute(null)]
+        [ReadOnlyAttribute(true)]
+        [BrowsableAttribute(true)]
+        public string JADERLINK { get => "JADERLINK"; }
+
+        [CategoryAttribute("JADERLINK")]
+        [DescriptionAttribute("")]
+        [DisplayNameAttribute("Youtube:")]
+        [DefaultValueAttribute(null)]
+        [ReadOnlyAttribute(true)]
+        [BrowsableAttribute(true)]
+        public string Youtube { get => "https://www.youtube.com/@JADERLINK"; }
+
+        [CategoryAttribute("JADERLINK")]
+        [DescriptionAttribute("")]
+        [DisplayNameAttribute("GitHub:")]
+        [DefaultValueAttribute(null)]
+        [ReadOnlyAttribute(true)]
+        [BrowsableAttribute(true)]
+        public string GitHub { get => "https://github.com/JADERLINK"; }
+
+        [CategoryAttribute("JADERLINK")]
+        [DescriptionAttribute("")]
+        [DisplayNameAttribute("Blog:")]
+        [DefaultValueAttribute(null)]
+        [ReadOnlyAttribute(true)]
+        [BrowsableAttribute(true)]
+        public string Blog { get => "https://jaderlink.blogspot.com/"; }
+
+        [CategoryAttribute("JADERLINK")]
+        [DescriptionAttribute("")]
+        [DisplayNameAttribute("Donate:")]
+        [DefaultValueAttribute(null)]
+        [ReadOnlyAttribute(true)]
+        [BrowsableAttribute(true)]
+        public string Donate { get => "https://jaderlink.github.io/Donate/"; }
 
     }
 }

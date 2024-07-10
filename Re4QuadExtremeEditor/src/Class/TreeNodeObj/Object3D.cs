@@ -15,7 +15,7 @@ namespace Re4QuadExtremeEditor.src.Class.TreeNodeObj
     /// <para>classe que representa os objetos, é usado no treeView;</para>
     /// <para>no Quad64 é usado no PropertyGrid, porem aqui dou outra finalidade;</para>
     /// </summary>
-    public class Object3D : TreeNode, NsMultiselectTreeView.IAltNode, NsMultiselectTreeView.IFastNode, IEquatable<Object3D>
+    public class Object3D : TreeNode, NsMultiselectTreeView.IAltNode, NsMultiselectTreeView.IFastNode, IEquatable<Object3D>, IObject3D
     {
         public Object3D() : base() {}
         public Object3D(string text) : base(text){ }

@@ -155,12 +155,17 @@ namespace Re4QuadExtremeEditor.src.Forms
 
         private void linkLabelMrCurious_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            To("https://drive.google.com/drive/folders/1BKribmvU37thKtI44uZivUsoYqFnyW09");
+            To("https://docs.google.com/document/d/1XWXl8naf8NZhV0k56cdAPYTOobgOcmVtHN1QYQnC7mA");
         }
 
         private void buttonCLOSE_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void linkLabelDonate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            To("https://jaderlink.github.io/Donate/");
         }
     }
 }

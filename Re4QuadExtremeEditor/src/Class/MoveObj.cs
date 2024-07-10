@@ -114,7 +114,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 {
                     if (MoveRelativeCamera)
                     {
-                        pos = savedPos[0] + (camera.moveObjRight * (MousePosX * sensitivity));
+                        pos = savedPos[0] + (camera.MoveObjRight * (MousePosX * sensitivity));
                     }
                     else
                     {
@@ -129,7 +129,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 {
                     if (MoveRelativeCamera)
                     {
-                        pos = savedPos[0] + (camera.moveObjFront * (MousePosY * sensitivity));
+                        pos = savedPos[0] + (camera.MoveObjFront * (MousePosY * sensitivity));
                     }
                     else
                     {
@@ -140,7 +140,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 {
                     if (MoveRelativeCamera)
                     {
-                        pos = savedPos[0] + (camera.moveObjRight * (MousePosX * sensitivity));
+                        pos = savedPos[0] + (camera.MoveObjRight * (MousePosX * sensitivity));
                         pos.Y = savedPos[0].Y + (MousePosY * sensitivity);
                     }
                     else
@@ -153,7 +153,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 {
                     if (MoveRelativeCamera)
                     {
-                        pos = savedPos[0] + (camera.moveObjRight * (MousePosX * sensitivity)) + (camera.moveObjFront * (MousePosY * sensitivity));
+                        pos = savedPos[0] + (camera.MoveObjRight * (MousePosX * sensitivity)) + (camera.MoveObjFront * (MousePosY * sensitivity));
                     }
                     else 
                     {
@@ -165,7 +165,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 {
                     if (MoveRelativeCamera)
                     {
-                        pos = savedPos[0] + (camera.moveObjRight * (MousePosX * sensitivity));
+                        pos = savedPos[0] + (camera.MoveObjRight * (MousePosX * sensitivity));
                         pos.Y = savedPos[0].Y + (MousePosY * sensitivity);
                     }
                     else
@@ -415,7 +415,7 @@ namespace Re4QuadExtremeEditor.src.Class
             {
                 if (MoveRelativeCamera)
                 {
-                    vec = savedPos + (camera.moveObjRight * (MousePosX * sensitivity));
+                    vec = savedPos + (camera.MoveObjRight * (MousePosX * sensitivity));
                 }
                 else
                 {
@@ -426,7 +426,7 @@ namespace Re4QuadExtremeEditor.src.Class
             {
                 if (MoveRelativeCamera)
                 {
-                    vec = savedPos + (camera.moveObjFront * (MousePosY * sensitivity));
+                    vec = savedPos + (camera.MoveObjFront * (MousePosY * sensitivity));
                 }
                 else
                 {
@@ -437,7 +437,7 @@ namespace Re4QuadExtremeEditor.src.Class
             {
                 if (MoveRelativeCamera)
                 {
-                    vec = savedPos + (camera.moveObjRight * (MousePosX * sensitivity)) + (camera.moveObjFront * (MousePosY * sensitivity));
+                    vec = savedPos + (camera.MoveObjRight * (MousePosX * sensitivity)) + (camera.MoveObjFront * (MousePosY * sensitivity));
                 }
                 else
                 {

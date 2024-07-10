@@ -1062,6 +1062,7 @@ namespace Re4QuadExtremeEditor
             this.panelControls.Name = "panelControls";
             this.panelControls.Size = new System.Drawing.Size(680, 126);
             this.panelControls.TabIndex = 1;
+            this.panelControls.Resize += new System.EventHandler(this.panelControls_Resize);
             // 
             // openFileDialogESL
             // 
@@ -1151,7 +1152,7 @@ namespace Re4QuadExtremeEditor
             this.MainMenuStrip = this.menuStripMenu;
             this.MinimumSize = new System.Drawing.Size(900, 530);
             this.Name = "MainForm";
-            this.Text = "RE4 Quad Extreme Editor";
+            this.Text = "RE4 QUAD EXTREME EDITOR [OLD VERSION] | V.1.0.3 | YOUTUBE.COM/@JADERLINK";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);

@@ -30,6 +30,8 @@ namespace Re4QuadExtremeEditor
 
         CameraMoveControl cameraMove;
         ObjectMoveControl objectMove;
+        Advertising1Control advertising1Control;
+        Advertising2Control advertising2Control;
 
         #region Camera // variaveis para a camera
         Camera camera = new Camera();
@@ -61,6 +63,8 @@ namespace Re4QuadExtremeEditor
             propertyGridObjs.SelectedObject = none;
             DataBase.SelectedNodes = treeViewObjs.SelectedNodes; // vinculo de referencia entra as listas
 
+            camera.getSelectedObject = getSelectedObject;
+
             glControl = new OpenTK.GLControl();
             glControl.Dock = DockStyle.Fill;
             glControl.Name = "glControl";
@@ -85,15 +89,38 @@ namespace Re4QuadExtremeEditor
             cameraMove.Name = "cameraMove";
             cameraMove.TabIndex = 998;
             cameraMove.TabStop = false;
-            panelControls.Controls.Add(cameraMove);
+            
 
             objectMove = new ObjectMoveControl(ref camera, updateGL, UpdateCameraMatrix, UpdatePropertyGrid);
             objectMove.Location = new Point(0, 0);
             objectMove.Anchor = AnchorStyles.Right | AnchorStyles.Bottom | AnchorStyles.Left;
             objectMove.Name = "objectMove";
-            objectMove.TabIndex = 997;
+            objectMove.TabIndex = 995;
             objectMove.TabStop = false;
+           
+
+            advertising1Control = new Advertising1Control();
+            advertising1Control.Location = new Point(0, 0);
+            advertising1Control.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            advertising1Control.Name = "advertising1Control";
+            advertising1Control.TabIndex = 997;
+            advertising1Control.TabStop = false;
+            advertising1Control.Hide();
+
+            advertising2Control = new Advertising2Control();
+            advertising2Control.Location = new Point(0, 0);
+            advertising2Control.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            advertising2Control.Name = "advertising2Control";
+            advertising2Control.TabIndex = 996;
+            advertising2Control.TabStop = false;
+            advertising2Control.Hide();
+
+            panelControls.Controls.Add(cameraMove);
+            panelControls.Controls.Add(advertising1Control);
+            panelControls.Controls.Add(advertising2Control);
             panelControls.Controls.Add(objectMove);
+            enable_splitContainerRight_Panel2_Resize = true;
+
 
             KeyPreview = true;
 
@@ -143,6 +170,63 @@ namespace Re4QuadExtremeEditor
             //apenas para testes
             //src.JSON.LangFile.writeLangFile("SourceLang.json");
             //int finish = 0;
+        }
+
+        bool enable_splitContainerRight_Panel2_Resize = false;
+        private void panelControls_Resize(object sender, EventArgs e)
+        {
+            if (enable_splitContainerRight_Panel2_Resize)
+            {
+                int painel2Width = panelControls.Width;
+                int quite = painel2Width / 2;
+
+                int adWidth = advertising1Control.Width;
+                int adquite = adWidth / 2;
+
+                int ad2Width = advertising2Control.Width;
+                int ad2quite = ad2Width / 2;
+
+                if (painel2Width > 640 + advertising2Control.Width)
+                {
+                    int posX = quite - ad2quite;
+                    if (posX < 395)
+                    {
+                        posX = 395;
+                    }
+                    advertising1Control.Hide();
+                    advertising1Control.Location = new Point(painel2Width, advertising1Control.Location.Y);
+                    advertising2Control.Location = new Point(posX, advertising2Control.Location.Y);
+                    advertising2Control.Show();
+                }
+                else if (painel2Width > 640 + advertising1Control.Width)
+                {
+                    int posX = quite - adquite;
+                    if (posX < 395)
+                    {
+                        posX = 395;
+                    }
+                    advertising2Control.Hide();
+                    advertising2Control.Location = new Point(painel2Width, advertising2Control.Location.Y);
+                    advertising1Control.Location = new Point(posX, advertising1Control.Location.Y);
+                    advertising1Control.Show();
+                }
+                else
+                {
+                    advertising1Control.Hide();
+                    advertising2Control.Hide();
+                    advertising1Control.Location = new Point(painel2Width, advertising1Control.Location.Y);
+                    advertising2Control.Location = new Point(painel2Width, advertising2Control.Location.Y);
+                }
+            }
+        }
+
+        private IObject3D getSelectedObject()
+        {
+            if (DataBase.LastSelectNode is Object3D node)
+            {
+                return node;
+            }
+            return null;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -443,6 +527,7 @@ namespace Re4QuadExtremeEditor
 
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.Texture2D);
+            GL.LineWidth(1.5f);
 
             DataBase.NoTextureIdGL = Texture.GetTextureIdGL(Properties.Resources.NoTexture);
             DataBase.TransparentTextureIdGL = Texture.GetTextureIdGL(Properties.Resources.Transparent);
@@ -982,7 +1067,7 @@ namespace Re4QuadExtremeEditor
             {
                 if (OldLastNodeIsNull)
                 {
-                    camera.resetOrbitToSelectedObject();
+                    camera.ResetOrbitToSelectedObject();
                 }
                 camera.UpdateCameraOrbitOnChangeObj();
                 camMtx = camera.GetViewMatrix();

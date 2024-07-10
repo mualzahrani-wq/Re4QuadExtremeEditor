@@ -76,6 +76,12 @@ namespace Re4QuadExtremeEditor.src.Forms
                 PopulateMultiSelectObjsList(prop, ClassSourceSPECIAL);
             }
 
+            //bug fix
+            ESL = ESL.Select(x => new EnemyProperty(x)).ToArray();
+            ETS = ETS.Select(x => new EtcModelProperty(x)).ToArray();
+            SPECIAL = SPECIAL.Select(x => new SpecialProperty(x)).ToArray();
+            //----
+
             comboBoxPropertyList.Items.Add("");
             comboBoxPropertyList.Items.AddRange(multiSelectObjs.Cast<object>().ToArray());
             comboBoxPropertyList.SelectedIndex = 0;

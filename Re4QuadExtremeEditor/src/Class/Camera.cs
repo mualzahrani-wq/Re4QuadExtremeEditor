@@ -10,28 +10,27 @@ namespace Re4QuadExtremeEditor.src.Class
 // basedo em https://github.com/DavidSM64/Quad64/blob/master/src/Viewer/Camera.cs
 // e em https://github.com/opentk/LearnOpenTK/blob/master/Common/Camera.cs
 {
-   
     public class Camera
     {
-        public enum CameraMode
+        public enum CameraMode : int
         {
             FLY = 0,
             ORBIT = 1,
             LOOK_DIRECTION = 2
         }
 
-        public enum LookDirection
+        public enum LookDirection : int
         {
-            TOP,
-            BOTTOM,
-            LEFT,
-            RIGHT,
-            FRONT,
-            BACK
+            TOP = 0,
+            BOTTOM = 1,
+            LEFT = 2,
+            RIGHT = 3,
+            FRONT = 4,
+            BACK = 5
         }
 
         private readonly Vector3[] lookPositions = new Vector3[]
-        {//3280
+        {
             new Vector3(0, 1640, 0), // top
             new Vector3(0, -1640, 0), // bottom
             new Vector3(-1640, 0, 0), // left
@@ -49,6 +48,9 @@ namespace Re4QuadExtremeEditor.src.Class
             new Vector2(-90, 0), // front
             new Vector2(90, 0)  // back
         };
+
+        private float camExtraSpeed = 3.0f;
+        public float CamExtraSpeed { get { return camExtraSpeed; } set { camExtraSpeed = value; } }
 
         private float camSpeedMultiplier = 1.0f;
         public float CamSpeedMultiplier { get { return camSpeedMultiplier; } set { camSpeedMultiplier = value; } }
@@ -130,7 +132,7 @@ namespace Re4QuadExtremeEditor.src.Class
         public void resetMouseStuff()
         {
             resetMouse = true;
-    }
+        }
 
         public void SaveCameraPosition()
         {
@@ -151,8 +153,8 @@ namespace Re4QuadExtremeEditor.src.Class
         private Vector3 moveObj_front = -Vector3.UnitZ; //front back
         private Vector3 moveObj_right = Vector3.UnitX; // right left
 
-        public Vector3 moveObjFront => moveObj_front;
-        public Vector3 moveObjRight => moveObj_right;
+        public Vector3 MoveObjFront => moveObj_front;
+        public Vector3 MoveObjRight => moveObj_right;
 
         // //
 
@@ -173,7 +175,7 @@ namespace Re4QuadExtremeEditor.src.Class
             resetMouse = true;
         }
 
-        public void SetToFlyMode() 
+        public void SetToFlyMode()
         {
             camMode = CameraMode.FLY;
             UpdateVectors();
@@ -181,10 +183,10 @@ namespace Re4QuadExtremeEditor.src.Class
             resetMouse = true;
         }
 
-        public void SetToOrbitMode() 
+        public void SetToOrbitMode()
         {
             camMode = CameraMode.ORBIT;
-            resetOrbitToSelectedObject();
+            ResetOrbitToSelectedObject();
             updateOrbitCamera();
             UpdateVectors();
             resetMouse = true;
@@ -206,17 +208,17 @@ namespace Re4QuadExtremeEditor.src.Class
 
         public Matrix4 GetViewMatrix()
         {
-            if (camMode == CameraMode.ORBIT && getSelectedObject() != null)
+            if (camMode == CameraMode.ORBIT && getSelectedObject != null && getSelectedObject() != null)
             {
                 return Matrix4.LookAt(pos, lookat, FixedUp);
             }
             return Matrix4.LookAt(pos, pos + _front, _up);
         }
 
-  
+
         private void UpdateAnglesFromOrbit()
         {
-            Vector3 direction = Vector3.Normalize((lookat - pos)/100);
+            Vector3 direction = Vector3.Normalize((lookat - pos) / 100f);
             _yaw = (float)Math.Atan2(direction.Z, direction.X);
             _pitch = (float)Math.Asin(direction.Y);
             UpdateVectors();
@@ -260,37 +262,37 @@ namespace Re4QuadExtremeEditor.src.Class
 
         public void updateCameraToUp()
         {
-            pos += _up * camSpeedMultiplier; // Up
+            pos += _up * (camSpeedMultiplier * camExtraSpeed); // Up
         }
 
-        public void updateCameraToDown() 
+        public void updateCameraToDown()
         {
-            pos -= _up * camSpeedMultiplier; // Down
+            pos -= _up * (camSpeedMultiplier * camExtraSpeed); // Down
         }
 
         public void updateCameraToRight()
         {
-            pos += _right * camSpeedMultiplier; // Right
+            pos += _right * (camSpeedMultiplier * camExtraSpeed); // Right
         }
 
         public void updateCameraToLeft()
         {
-            pos -= _right * camSpeedMultiplier; // Left
+            pos -= _right * (camSpeedMultiplier * camExtraSpeed); // Left
         }
 
         public void updateCameraToFront()
         {
-            pos += _front * camSpeedMultiplier; // Forward 
+            pos += _front * (camSpeedMultiplier * camExtraSpeed); // Forward 
         }
 
         public void updateCameraToBack()
         {
-            pos -= _front * camSpeedMultiplier; // Backwards
+            pos -= _front * (camSpeedMultiplier * camExtraSpeed); // Backwards
         }
 
         public void updateCameraOffsetMatrixWithMouse(bool isControlDown, int mouseX, int mouseY, bool invert = false)
         {
-            if (camMode == CameraMode.ORBIT && getSelectedObject() != null)
+            if (camMode == CameraMode.ORBIT && getSelectedObject != null && getSelectedObject() != null)
             {
                 updateCameraOffsetWithMouse_ORBIT(mouseX, mouseY, invert);
             }
@@ -298,7 +300,7 @@ namespace Re4QuadExtremeEditor.src.Class
             {
                 updateCameraOffsetWithMouse_LOOK(mouseX, mouseY, invert, isControlDown);
             }
-            else 
+            else
             {
                 updateCameraMatrixWithMouse_FLY(mouseX, mouseY, invert);
             }
@@ -326,8 +328,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 }
 
                 const float sensitivity = 0.2f;
-                // FUNCIONA
-                 //Apply the camera pitch and yaw (we clamp the pitch in the camera class)
+                //Apply the camera pitch and yaw (we clamp the pitch in the camera class)
                 YawDegrees += MousePosX * sensitivity;
                 PitchDegrees -= MousePosY * sensitivity; // reversed since y-coordinates range from bottom to top
             }
@@ -345,10 +346,10 @@ namespace Re4QuadExtremeEditor.src.Class
             int MousePosX = (-mouseX) + lastMouseX;
             int MousePosY = (-mouseY) + lastMouseY;
 
-            float extraSpeed = 1f;
+            float controlDownExtraSpeed = 1f;
             if (camMode == CameraMode.LOOK_DIRECTION && !isControlDown)
             {
-                extraSpeed = 4f;
+                controlDownExtraSpeed = 4f;
             }
 
             if (invert)
@@ -357,7 +358,7 @@ namespace Re4QuadExtremeEditor.src.Class
                 MousePosY = -MousePosY;
             }
 
-            float sensitivity = 0.2f * extraSpeed * camSpeedMultiplier;
+            float sensitivity = 0.2f * controlDownExtraSpeed * (camSpeedMultiplier * camExtraSpeed);
             pos = savedCamPos + (-_right * (MousePosX) * sensitivity) + (_up * (MousePosY) * sensitivity);
         }
 
@@ -390,7 +391,7 @@ namespace Re4QuadExtremeEditor.src.Class
             {
                 amt = -amt;
             }
-            if (camMode == CameraMode.ORBIT && getSelectedObject() != null)
+            if (camMode == CameraMode.ORBIT && getSelectedObject != null && getSelectedObject() != null)
             {
                 updateCameraMatrixWithScrollWheel_ORBIT(amt);
             }
@@ -413,19 +414,12 @@ namespace Re4QuadExtremeEditor.src.Class
             updateOrbitCamera();
         }
 
+        public Func<IObject3D> getSelectedObject;
 
-        private Object3D getSelectedObject()
+        public float SelectedObjPosY()
         {
-            if (DataBase.LastSelectNode is Object3D node)
-            {
-                return node;
-            }
-            return null;
-        }
-
-        public float SelectedObjPosY() 
-        {
-            Object3D obj = getSelectedObject();
+            if (getSelectedObject == null) { return 0; }
+            IObject3D obj = getSelectedObject();
             if (obj == null) { return 0; }
             return obj.GetObjPosition_ToCamera().Y;
         }
@@ -434,7 +428,8 @@ namespace Re4QuadExtremeEditor.src.Class
         {
             if (camMode == CameraMode.ORBIT)
             {
-                Object3D obj = getSelectedObject();
+                if (getSelectedObject == null) { return; }
+                IObject3D obj = getSelectedObject();
                 if (obj == null) { return; }
                 Vector3 objPos = obj.GetObjPosition_ToCamera();
                 pos.X = objPos.X + (float)(Math.Cos(orbitPhi) * -Math.Sin(orbitTheta) * orbitDistance);
@@ -445,12 +440,13 @@ namespace Re4QuadExtremeEditor.src.Class
                 lookat.Z = objPos.Z;
                 UpdateAnglesFromOrbit();
             }
-            
+
         }
 
-        public void resetOrbitToSelectedObject()
+        public void ResetOrbitToSelectedObject()
         {
-            Object3D obj = getSelectedObject();
+            if (getSelectedObject == null) { return; }
+            IObject3D obj = getSelectedObject();
             if (obj != null)
             {
                 orbitTheta = -obj.GetObjAngleY_ToCamera();
@@ -460,11 +456,11 @@ namespace Re4QuadExtremeEditor.src.Class
         }
 
 
-        public void UpdateCameraOrbitOnChangeObj() 
+        public void UpdateCameraOrbitOnChangeObj()
         {
-            if (camMode == CameraMode.ORBIT && getSelectedObject() != null)
+            if (camMode == CameraMode.ORBIT && getSelectedObject != null && getSelectedObject() != null)
             {
-                //resetOrbitToSelectedObject();
+                //ResetOrbitToSelectedObject();
                 updateOrbitCamera();
                 UpdateVectors();
                 resetMouse = true;
@@ -473,7 +469,7 @@ namespace Re4QuadExtremeEditor.src.Class
 
         public void UpdateCameraOrbitOnChangeValue()
         {
-            if (camMode == CameraMode.ORBIT && getSelectedObject() != null)
+            if (camMode == CameraMode.ORBIT && getSelectedObject != null && getSelectedObject() != null)
             {
                 updateOrbitCamera();
                 UpdateVectors();
@@ -482,4 +478,11 @@ namespace Re4QuadExtremeEditor.src.Class
         }
 
     }
+
+    public interface IObject3D
+    {
+        Vector3 GetObjPosition_ToCamera();
+        float GetObjAngleY_ToCamera();
+    }
+
 }

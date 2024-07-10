@@ -31,7 +31,6 @@ namespace Re4QuadExtremeEditor.src.Forms
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CreditsForm));
             this.groupBoxProjectLinks = new System.Windows.Forms.GroupBox();
-            this.textBoxDonate = new System.Windows.Forms.TextBox();
             this.linkLabelProjectGitHub = new System.Windows.Forms.LinkLabel();
             this.groupBoxAuthors = new System.Windows.Forms.GroupBox();
             this.textBoxJaderLinkEmail = new System.Windows.Forms.TextBox();
@@ -75,6 +74,7 @@ namespace Re4QuadExtremeEditor.src.Forms
             this.linkLabelSonOfPercia = new System.Windows.Forms.LinkLabel();
             this.linkLabelMrCurious = new System.Windows.Forms.LinkLabel();
             this.buttonCLOSE = new System.Windows.Forms.Button();
+            this.linkLabelDonate = new System.Windows.Forms.LinkLabel();
             this.groupBoxProjectLinks.SuspendLayout();
             this.groupBoxAuthors.SuspendLayout();
             this.groupBoxAPIs.SuspendLayout();
@@ -84,7 +84,7 @@ namespace Re4QuadExtremeEditor.src.Forms
             // 
             // groupBoxProjectLinks
             // 
-            this.groupBoxProjectLinks.Controls.Add(this.textBoxDonate);
+            this.groupBoxProjectLinks.Controls.Add(this.linkLabelDonate);
             this.groupBoxProjectLinks.Controls.Add(this.linkLabelProjectGitHub);
             this.groupBoxProjectLinks.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBoxProjectLinks.Location = new System.Drawing.Point(6, 6);
@@ -93,18 +93,6 @@ namespace Re4QuadExtremeEditor.src.Forms
             this.groupBoxProjectLinks.TabIndex = 0;
             this.groupBoxProjectLinks.TabStop = false;
             this.groupBoxProjectLinks.Text = "Project Links";
-            // 
-            // textBoxDonate
-            // 
-            this.textBoxDonate.BackColor = System.Drawing.SystemColors.Control;
-            this.textBoxDonate.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBoxDonate.ForeColor = System.Drawing.SystemColors.WindowText;
-            this.textBoxDonate.Location = new System.Drawing.Point(119, 20);
-            this.textBoxDonate.Name = "textBoxDonate";
-            this.textBoxDonate.ReadOnly = true;
-            this.textBoxDonate.Size = new System.Drawing.Size(475, 14);
-            this.textBoxDonate.TabIndex = 16;
-            this.textBoxDonate.Text = "To Donate to JaderLink, Contact: jaderlinkproject@gmail.com";
             // 
             // linkLabelProjectGitHub
             // 
@@ -617,6 +605,20 @@ namespace Re4QuadExtremeEditor.src.Forms
             this.buttonCLOSE.UseVisualStyleBackColor = true;
             this.buttonCLOSE.Click += new System.EventHandler(this.buttonCLOSE_Click);
             // 
+            // linkLabelDonate
+            // 
+            this.linkLabelDonate.ActiveLinkColor = System.Drawing.Color.Black;
+            this.linkLabelDonate.AutoSize = true;
+            this.linkLabelDonate.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.linkLabelDonate.LinkColor = System.Drawing.Color.Navy;
+            this.linkLabelDonate.Location = new System.Drawing.Point(286, 19);
+            this.linkLabelDonate.Name = "linkLabelDonate";
+            this.linkLabelDonate.Size = new System.Drawing.Size(423, 15);
+            this.linkLabelDonate.TabIndex = 2;
+            this.linkLabelDonate.TabStop = true;
+            this.linkLabelDonate.Text = "To donate to JADERLINK go to: https://jaderlink.github.io/Donate/";
+            this.linkLabelDonate.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabelDonate_LinkClicked);
+            // 
             // CreditsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
@@ -695,12 +697,12 @@ namespace Re4QuadExtremeEditor.src.Forms
         private System.Windows.Forms.LinkLabel linkLabelLicenseCodeProject;
         private System.Windows.Forms.GroupBox groupBoxDocumentation;
         private System.Windows.Forms.Label labelDocText;
-        private System.Windows.Forms.TextBox textBoxDonate;
         private System.Windows.Forms.TextBox textBoxJaderLinkEmail;
         private System.Windows.Forms.LinkLabel linkLabelYoutubeLordvinc;
         private System.Windows.Forms.LinkLabel linkLabelYoutubeJaderLink;
         private System.Windows.Forms.LinkLabel linkLabelSonOfPercia;
         private System.Windows.Forms.LinkLabel linkLabelMrCurious;
         private System.Windows.Forms.Button buttonCLOSE;
+        private System.Windows.Forms.LinkLabel linkLabelDonate;
     }
 }
