@@ -298,6 +298,7 @@ namespace Re4QuadExtremeEditor
         /// </summary>
         private void selectObject(int mx, int my)
         {
+            if (DataBase.SelectedNodes == null) return;
             int h = glControl.Height;
             TheRender.RenderToSelect(ref camMtx, ref ProjMatrix); // renderiza o ambiente GL no modo seleção.
             byte[] pixel = new byte[4];
@@ -2058,7 +2059,23 @@ namespace Re4QuadExtremeEditor
 
         }
 
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        /// <summary>
+        /// Releases GPU texture handles when the window is fully closed,
+        /// preventing OpenGL resource leaks.
+        /// </summary>
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            myTimer.Enabled = false;
+            myTimer.Dispose();
+            if (DataBase.NoTextureIdGL != 0)
+                OpenTK.Graphics.OpenGL.GL.DeleteTexture(DataBase.NoTextureIdGL);
+            if (DataBase.TransparentTextureIdGL != 0)
+                OpenTK.Graphics.OpenGL.GL.DeleteTexture(DataBase.TransparentTextureIdGL);
+            if (DataBase.SolidTextureIdGL != 0)
+                OpenTK.Graphics.OpenGL.GL.DeleteTexture(DataBase.SolidTextureIdGL);
+        }
+
+                private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             e.Cancel = true;
             if (MessageBox.Show(Lang.GetText(eLang.MessageBoxFormClosingDialog), Lang.GetText(eLang.MessageBoxFormClosingTitle), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
