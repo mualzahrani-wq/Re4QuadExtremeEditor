@@ -614,36 +614,34 @@ namespace Re4QuadExtremeEditor.src.Controls
 
 
 
-        private void moveObjHorizontal1_MouseLeave(object sender, EventArgs e)
+        // Shared helper: saves the correct position/rotation/scale snapshot
+        // depending on which move flags are active, and sets the invert flag.
+        private void HandleHorizontalMouseDown(MouseEventArgs e,
+            MoveObjType rotFlag, MoveObjType scaleFlag, MoveObjType posFlag)
+        {
+            moveObj_lastMouseXY = new Point(e.X, e.Y);
+            if (MoveObjTypeSelected.HasFlag(rotFlag))
+                SavedPosition = MoveObj.GetSavedRotationAngles();
+            else if (MoveObjTypeSelected.HasFlag(scaleFlag))
+                SavedPosition = MoveObj.GetSavedScales();
+            else
+                SavedPosition = MoveObj.GetSavedPosition();
+            move_Invert = (e.Button == MouseButtons.Right);
+        }
+
+                private void moveObjHorizontal1_MouseLeave(object sender, EventArgs e)
         {
             moveObjHorisontal1_mouseDown = false;
+            move_Invert = false;
         }
 
         private void moveObjHorizontal1_MouseDown(object sender, MouseEventArgs e)
         {
             moveObjHorisontal1_mouseDown = true;
-            moveObj_lastMouseXY.X = e.X;
-            moveObj_lastMouseXY.Y = e.Y;
-            if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal1RotationObjX))
-            {
-                SavedPosition = MoveObj.GetSavedRotationAngles();
-            }
-            else if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal1ScaleObjX))
-            {
-                SavedPosition = MoveObj.GetSavedScales();
-            }
-            else
-            {
-                SavedPosition = MoveObj.GetSavedPosition();
-            }
-            if (e.Button == MouseButtons.Right)
-            {
-                move_Invert = true;
-            }
-            if (e.Button == MouseButtons.Left)
-            {
-                move_Invert = false;
-            }
+            HandleHorizontalMouseDown(e,
+                MoveObjType._Horizontal1RotationObjX,
+                MoveObjType._Horizontal1ScaleObjX,
+                MoveObjType._Horizontal1ChangeTriggerZoneHeight);
         }
 
         private void moveObjHorizontal1_MouseUp(object sender, MouseEventArgs e)
@@ -697,33 +695,16 @@ namespace Re4QuadExtremeEditor.src.Controls
         private void moveObjHorizontal2_MouseLeave(object sender, EventArgs e)
         {
             moveObjHorisontal2_mouseDown = false;
+            move_Invert = false;
         }
 
         private void moveObjHorizontal2_MouseDown(object sender, MouseEventArgs e)
         {
             moveObjHorisontal2_mouseDown = true;
-            moveObj_lastMouseXY.X = e.X;
-            moveObj_lastMouseXY.Y = e.Y;
-            if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal2RotationObjY))
-            {
-                SavedPosition = MoveObj.GetSavedRotationAngles();
-            }
-            else if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal2ScaleObjY))
-            {
-                SavedPosition = MoveObj.GetSavedScales();
-            }
-            else
-            {
-                SavedPosition = MoveObj.GetSavedPosition();
-            }
-            if (e.Button == MouseButtons.Right)
-            {
-                move_Invert = true;
-            }
-            if (e.Button == MouseButtons.Left)
-            {
-                move_Invert = false;
-            }
+            HandleHorizontalMouseDown(e,
+                MoveObjType._Horizontal2RotationObjY,
+                MoveObjType._Horizontal2ScaleObjY,
+                MoveObjType._Horizontal2RotationZoneY);
         }
 
         private void moveObjHorizontal2_MouseUp(object sender, MouseEventArgs e)
@@ -777,33 +758,16 @@ namespace Re4QuadExtremeEditor.src.Controls
         private void moveObjHorizontal3_MouseLeave(object sender, EventArgs e)
         {
             moveObjHorisontal3_mouseDown = false;
+            move_Invert = false;
         }
 
         private void moveObjHorizontal3_MouseDown(object sender, MouseEventArgs e)
         {
             moveObjHorisontal3_mouseDown = true;
-            moveObj_lastMouseXY.X = e.X;
-            moveObj_lastMouseXY.Y = e.Y;
-            if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal3RotationObjZ))
-            {
-                SavedPosition = MoveObj.GetSavedRotationAngles();
-            }
-            else if (MoveObjTypeSelected.HasFlag(MoveObjType._Horizontal3ScaleObjZ))
-            {
-                SavedPosition = MoveObj.GetSavedScales();
-            }
-            else
-            {
-                SavedPosition = MoveObj.GetSavedPosition();
-            }
-            if (e.Button == MouseButtons.Right)
-            {
-                move_Invert = true;
-            }
-            if (e.Button == MouseButtons.Left)
-            {
-                move_Invert = false;
-            }
+            HandleHorizontalMouseDown(e,
+                MoveObjType._Horizontal3RotationObjZ,
+                MoveObjType._Horizontal3ScaleObjZ,
+                MoveObjType._Horizontal3TriggerZoneScaleAll);
         }
 
         private void moveObjHorizontal3_MouseUp(object sender, MouseEventArgs e)
