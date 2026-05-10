@@ -14,58 +14,48 @@ using OpenTK;
 namespace Re4QuadExtremeEditor.src
 {
     /// <summary>
-    /// Metodos uteis para serem usados;
+    /// Utility methods used throughout the program.
     /// </summary>
     public static class Utils
-    {        
+    {
         /// <summary>
-        /// define as configs padrões 
+        /// Returns default configuration values.
         /// </summary>
-        /// <returns></returns>
         public static Configs GetDefaultConfigs()
         {
             Configs configs = new Configs();
             configs.xfileDiretory = @"xfile\";
             configs.xscrDiretory = @"xscr\";
             configs.SkyColor = Color.Azure;
-
-            // colocar novas configurões aqui;
             configs.FrationalAmount = 9;
             configs.FrationalSymbol = ConfigFrationalSymbol.AcceptsCommaAndPeriod_OutputPeriod;
-
             configs.ItemDisableRotationAll = false;
             configs.ItemDisableRotationIfXorYorZequalZero = false;
             configs.ItemDisableRotationIfZisNotGreaterThanZero = true;
             configs.ItemRotationOrder = ObjRotationOrder.RotationXY;
             configs.ItemRotationCalculationMultiplier = 1;
             configs.ItemRotationCalculationDivider = 1;
-
             configs.ForceUseOldOpenGL = false;
             configs.ForceUseModernOpenGL = false;
-
             return configs;
         }
 
         /// <summary>
-        /// metodo que tem como função carregar as cofigurações ao carregar;
+        /// Loads and applies saved configurations on startup.
         /// </summary>
-        public static void StartLoadConfigs() 
+        public static void StartLoadConfigs()
         {
             if (File.Exists(Consts.ConfigsFileDiretory))
             {
                 Configs configs = GetDefaultConfigs();
-                // para caso o arquivo não consiga ser lido
                 try { configs = ConfigsFile.parseConfigs(Consts.ConfigsFileDiretory); } catch (Exception) { }
-              
+
                 Globals.BackupConfigs = configs;
                 Globals.xfileDiretory = configs.xfileDiretory;
                 Globals.xscrDiretory = configs.xscrDiretory;
                 Globals.SkyColor = configs.SkyColor;
-
-                // colocar novas configurões aqui;
                 Globals.FrationalAmount = configs.FrationalAmount;
                 Globals.FrationalSymbol = configs.FrationalSymbol;
-
                 Globals.ItemDisableRotationAll = configs.ItemDisableRotationAll;
                 Globals.ItemDisableRotationIfXorYorZequalZero = configs.ItemDisableRotationIfXorYorZequalZero;
                 Globals.ItemDisableRotationIfZisNotGreaterThanZero = configs.ItemDisableRotationIfZisNotGreaterThanZero;
@@ -73,24 +63,18 @@ namespace Re4QuadExtremeEditor.src
                 Globals.ItemRotationCalculationMultiplier = configs.ItemRotationCalculationMultiplier;
                 Globals.ItemRotationCalculationDivider = configs.ItemRotationCalculationDivider;
             }
-            else 
+            else
             {
                 if (!Directory.Exists(Consts.dataDiretory))
-                {
                     Directory.CreateDirectory(Consts.dataDiretory);
-                }
 
-                // para caso o arquivo não consiga ser gravado
-                try { ConfigsFile.writeConfigsFile(Consts.ConfigsFileDiretory, GetDefaultConfigs()); } catch (Exception) { } 
-
+                try { ConfigsFile.writeConfigsFile(Consts.ConfigsFileDiretory, GetDefaultConfigs()); } catch (Exception) { }
                 Globals.BackupConfigs = GetDefaultConfigs();
             }
-        
         }
 
-
         /// <summary>
-        /// carrega a lista de Room ao iniciar o programa
+        /// Loads the room info list on startup.
         /// </summary>
         public static void StartLoadRoomInfoList()
         {
@@ -99,30 +83,34 @@ namespace Re4QuadExtremeEditor.src
                 DataBase.RoomList.Clear();
                 DataBase.RoomList = RoomInfoFile.parseRoomList(Consts.RoomListFileDiretory);
             }
-            catch (Exception)
-            {
-            }
+            catch (Exception) { }
         }
 
         /// <summary>
-        /// carrega os shader ao iniciar o programa
+        /// Loads GLSL shaders on startup.
         /// </summary>
-        public static void StartLoadShader() 
+        public static void StartLoadShader()
         {
-            DataBase.ShaderRoom = new Class.Shaders.Shader(Encoding.UTF8.GetString(Properties.Resources.RoomShaderVert), Encoding.UTF8.GetString(Properties.Resources.RoomShaderFrag));
+            DataBase.ShaderRoom = new Class.Shaders.Shader(
+                Encoding.UTF8.GetString(Properties.Resources.RoomShaderVert),
+                Encoding.UTF8.GetString(Properties.Resources.RoomShaderFrag));
             DataBase.ShaderRoom.Use();
             DataBase.ShaderRoom.SetInt("texture0", 0);
 
-            DataBase.ShaderObjs = new Class.Shaders.Shader(Encoding.UTF8.GetString(Properties.Resources.ObjShaderVert), Encoding.UTF8.GetString(Properties.Resources.ObjShaderFrag));
+            DataBase.ShaderObjs = new Class.Shaders.Shader(
+                Encoding.UTF8.GetString(Properties.Resources.ObjShaderVert),
+                Encoding.UTF8.GetString(Properties.Resources.ObjShaderFrag));
             DataBase.ShaderObjs.Use();
             DataBase.ShaderObjs.SetInt("texture0", 0);
 
-            DataBase.ShaderBoundingBox = new Class.Shaders.Shader(Encoding.UTF8.GetString(Properties.Resources.BoundingBoxShaderVert), Encoding.UTF8.GetString(Properties.Resources.BoundingBoxShaderFrag));
+            DataBase.ShaderBoundingBox = new Class.Shaders.Shader(
+                Encoding.UTF8.GetString(Properties.Resources.BoundingBoxShaderVert),
+                Encoding.UTF8.GetString(Properties.Resources.BoundingBoxShaderFrag));
             DataBase.ShaderBoundingBox.Use();
         }
 
         /// <summary>
-        /// não carrega shader, usa oldGL, codigo adaptado
+        /// Initialises legacy (OpenGL 2/3) no-shader rendering path.
         /// </summary>
         public static void StartLoadNoShader_OldGL()
         {
@@ -131,107 +119,73 @@ namespace Re4QuadExtremeEditor.src
             DataBase.ShaderBoundingBox = new Class.Shaders.NoShaderBoundingBox();
         }
 
-
         /// <summary>
-        /// carrega os modelos 3d dos objetos ao iniciar o programa
+        /// Loads 3-D object models on startup.
         /// </summary>
         public static void StartLoadObjsModels()
         {
             DataBase.InternalModels = new ModelGroup(Consts.InternalModelGroupName, Consts.InternalModelsJsonFilesDiretory, Consts.InternalModelsListFileDiretory, Directory.GetCurrentDirectory() + "\\");
-            DataBase.ItemsModels = new ModelGroup(Consts.ItemsModelGroupName, Consts.ItemsModelsJsonFilesDiretory, Consts.ItemsModelsListFileDiretory, Globals.xfileDiretory);
-            DataBase.EtcModels = new ModelGroup(Consts.EtcModelGroupName, Consts.EtcModelsJsonFilesDiretory, Consts.EtcModelsListFileDiretory, Globals.xfileDiretory);
-            DataBase.EnemiesModels = new ModelGroup(Consts.EnemiesModelGroupName, Consts.EnemiesModelsJsonFilesDiretory, Consts.EnemiesModelsListFileDiretory, Globals.xfileDiretory);           
-            //int finish = 0;
+            DataBase.ItemsModels    = new ModelGroup(Consts.ItemsModelGroupName,    Consts.ItemsModelsJsonFilesDiretory,    Consts.ItemsModelsListFileDiretory,    Globals.xfileDiretory);
+            DataBase.EtcModels      = new ModelGroup(Consts.EtcModelGroupName,      Consts.EtcModelsJsonFilesDiretory,      Consts.EtcModelsListFileDiretory,      Globals.xfileDiretory);
+            DataBase.EnemiesModels  = new ModelGroup(Consts.EnemiesModelGroupName,  Consts.EnemiesModelsJsonFilesDiretory,  Consts.EnemiesModelsListFileDiretory,  Globals.xfileDiretory);
         }
 
-
         /// <summary>
-        /// carrega as lista de ObjInfo ao iniciar o programa
+        /// Loads ObjInfo ID dictionaries on startup.
         /// </summary>
-        public static void StartLoadObjsInfoLists() 
+        public static void StartLoadObjsInfoLists()
         {
-            DataBase.ItemsIDs = new Dictionary<ushort, ObjInfo>();
+            DataBase.ItemsIDs    = new Dictionary<ushort, ObjInfo>();
             DataBase.EtcModelIDs = new Dictionary<ushort, ObjInfo>();
-            DataBase.EnemiesIDs = new Dictionary<ushort, ObjInfo>();
-            try { DataBase.ItemsIDs = ObjInfoFile.parseObjInfoList(Consts.ItemsObjInfoListFileDiretory); } catch (Exception){}
-            try { DataBase.EtcModelIDs = ObjInfoFile.parseObjInfoList(Consts.EtcModelObjInfoListFileDiretory); } catch (Exception){}
-            try { DataBase.EnemiesIDs = ObjInfoFile.parseObjInfoList(Consts.EnemiesObjInfoListFileDiretory); } catch (Exception){}
+            DataBase.EnemiesIDs  = new Dictionary<ushort, ObjInfo>();
+            try { DataBase.ItemsIDs    = ObjInfoFile.parseObjInfoList(Consts.ItemsObjInfoListFileDiretory);    } catch (Exception) { }
+            try { DataBase.EtcModelIDs = ObjInfoFile.parseObjInfoList(Consts.EtcModelObjInfoListFileDiretory); } catch (Exception) { }
+            try { DataBase.EnemiesIDs  = ObjInfoFile.parseObjInfoList(Consts.EnemiesObjInfoListFileDiretory);  } catch (Exception) { }
         }
 
         /// <summary>
-        /// na lista de enimigos os ids vão de 0x00 a 0x4F, depois disso se repete a ordem dos inimigos, porem eles não emitem som
+        /// Expands the enemy ID list with extra silent segments (0x5000 and 0xA000 ranges).
         /// </summary>
-        public static void StartEnemyExtraSegmentList() 
+        public static void StartEnemyExtraSegmentList()
         {
-            if (Globals.CreateEnemyExtraSegmentList)
-            {
-                // segund ExtraSegment
-                for (ushort i = 0; i < 0x50; i++)
-                {
-                    ushort originalId = (ushort)(i * 0x100);
+            if (!Globals.CreateEnemyExtraSegmentList) return;
 
-                    var list = (from obj in DataBase.EnemiesIDs
-                                where obj.Key >= originalId && obj.Key <= (originalId + 0xFF)
-                                select obj.Key).ToArray();
-
-                    if (list.Length != 0)
-                    {
-                        foreach (var Key in list)
-                        {
-                            ushort newId = (ushort)(Key + 0x5000);
-                            ObjInfo obj;
-                            if (!DataBase.EnemiesIDs.ContainsKey(newId) && DataBase.EnemiesIDs.TryGetValue(Key, out obj))
-                            {
-                                ObjInfo newObj = new ObjInfo(newId,
-                                    obj.ModelKey,
-                                    obj.UseInternalModel,
-                                    obj.Name + " " + Lang.GetText(eLang.EnemyExtraSegmentSegund),
-                                    obj.Description + " " + Lang.GetText(eLang.EnemyExtraSegmentSegund) + " " + Lang.GetText(eLang.EnemyExtraSegmentNoSound));
-                                DataBase.EnemiesIDs.Add(newId, newObj);
-                            }
-
-                        }
-                    }
-                }
-
-                //third ExtraSegment
-                for (ushort i = 0; i < 0x50; i++)
-                {
-                    ushort originalId = (ushort)(i * 0x100);
-
-                    var list = (from obj in DataBase.EnemiesIDs
-                                where obj.Key >= originalId && obj.Key <= (originalId + 0xFF)
-                                select obj.Key).ToArray();
-
-                    if (list.Length != 0)
-                    {
-                        foreach (var Key in list)
-                        {
-                            ushort newId = (ushort)(Key + 0xA000);
-                            ObjInfo obj;
-                            if (!DataBase.EnemiesIDs.ContainsKey(newId) && DataBase.EnemiesIDs.TryGetValue(Key, out obj))
-                            {
-                                ObjInfo newObj = new ObjInfo(newId,
-                                    obj.ModelKey,
-                                    obj.UseInternalModel,
-                                    obj.Name + " " + Lang.GetText(eLang.EnemyExtraSegmentThird),
-                                    obj.Description + " " + Lang.GetText(eLang.EnemyExtraSegmentThird) + " " + Lang.GetText(eLang.EnemyExtraSegmentNoSound));
-                                DataBase.EnemiesIDs.Add(newId, newObj);
-                            }
-
-                        }
-                    }
-                }
-
-            }
-        
+            AddEnemySegment(0x5000, eLang.EnemyExtraSegmentSegund);
+            AddEnemySegment(0xA000, eLang.EnemyExtraSegmentThird);
         }
 
+        // Shared helper used by StartEnemyExtraSegmentList.
+        private static void AddEnemySegment(ushort baseOffset, eLang segmentLang)
+        {
+            for (ushort i = 0; i < 0x50; i++)
+            {
+                ushort originalId = (ushort)(i * 0x100);
+                var keys = (from obj in DataBase.EnemiesIDs
+                            where obj.Key >= originalId && obj.Key <= (originalId + 0xFF)
+                            select obj.Key).ToArray();
+
+                foreach (var key in keys)
+                {
+                    ushort newId = (ushort)(key + baseOffset);
+                    ObjInfo obj;
+                    if (!DataBase.EnemiesIDs.ContainsKey(newId) && DataBase.EnemiesIDs.TryGetValue(key, out obj))
+                    {
+                        string suffix = Lang.GetText(segmentLang);
+                        DataBase.EnemiesIDs.Add(newId, new ObjInfo(
+                            newId,
+                            obj.ModelKey,
+                            obj.UseInternalModel,
+                            obj.Name + " " + suffix,
+                            obj.Description + " " + suffix + " " + Lang.GetText(eLang.EnemyExtraSegmentNoSound)));
+                    }
+                }
+            }
+        }
 
         /// <summary>
-        /// carrega a lista de PromptMessage, em  ListBoxProperty.PromptMessageList
+        /// Loads the prompt-message list used in list-box properties.
         /// </summary>
-        public static void StartLoadPromptMessageList() 
+        public static void StartLoadPromptMessageList()
         {
             try
             {
@@ -241,283 +195,264 @@ namespace Re4QuadExtremeEditor.src
             {
                 ListBoxProperty.PromptMessageList = new Dictionary<byte, ByteObjForListBox>();
             }
-           
         }
 
         /// <summary>
-        /// prenche ListBoxProperty
+        /// Populates static list-box dictionaries used by property grids.
         /// </summary>
         public static void StartSetListBoxsProperty()
         {
-            //ListBoxProperty.FloatTypeLis
-            Dictionary<bool, BoolObjForListBox> FloatType = new Dictionary<bool, BoolObjForListBox>();
-            FloatType.Add(false, new BoolObjForListBox(false, Lang.GetAttributeText(aLang.ListBoxFloatTypeDisable)));
-            FloatType.Add(true, new BoolObjForListBox(true, Lang.GetAttributeText(aLang.ListBoxFloatTypeEnable)));
-            ListBoxProperty.FloatTypeList = FloatType;
+            // FloatType
+            ListBoxProperty.FloatTypeList = new Dictionary<bool, BoolObjForListBox>
+            {
+                { false, new BoolObjForListBox(false, Lang.GetAttributeText(aLang.ListBoxFloatTypeDisable)) },
+                { true,  new BoolObjForListBox(true,  Lang.GetAttributeText(aLang.ListBoxFloatTypeEnable)) },
+            };
 
+            // EnemyEnable
+            ListBoxProperty.EnemyEnableList = new Dictionary<byte, ByteObjForListBox>
+            {
+                { 0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxDisable)) },
+                { 0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxEnable)) },
+            };
 
-            //ListBoxProperty.EnemyEnableList
-            Dictionary<byte, ByteObjForListBox> Enable = new Dictionary<byte, ByteObjForListBox>();
-            Enable.Add(0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxDisable)));
-            Enable.Add(0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxEnable)));
-            ListBoxProperty.EnemyEnableList = Enable;
+            // SpecialZoneCategory
+            ListBoxProperty.SpecialZoneCategoryList = new Dictionary<byte, ByteObjForListBox>
+            {
+                { 0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory00)) },
+                { 0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory01)) },
+                { 0x02, new ByteObjForListBox(0x02, "02: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory02)) },
+            };
 
+            // RefInteractionType
+            ListBoxProperty.RefInteractionTypeList = new Dictionary<byte, ByteObjForListBox>
+            {
+                { 0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType00)) },
+                { 0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType01Enemy)) },
+                { 0x02, new ByteObjForListBox(0x02, "02: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType02EtcModel)) },
+            };
 
-            //ListBoxProperty.SpecialZoneCategoryList
-            Dictionary<byte, ByteObjForListBox> SpecialZoneCategory = new Dictionary<byte, ByteObjForListBox>();
-            SpecialZoneCategory.Add(0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory00)));
-            SpecialZoneCategory.Add(0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory01)));
-            SpecialZoneCategory.Add(0x02, new ByteObjForListBox(0x02, "02: " + Lang.GetAttributeText(aLang.ListBoxSpecialZoneCategory02)));
-            ListBoxProperty.SpecialZoneCategoryList = SpecialZoneCategory;
+            // ItemAuraType
+            var itemAura = new Dictionary<ushort, UshortObjForListBox>();
+            for (ushort a = 0x00; a <= 0x09; a++)
+            {
+                aLang key = (aLang)Enum.Parse(typeof(aLang), "ListBoxItemAuraType" + a.ToString("X2"));
+                itemAura.Add(a, new UshortObjForListBox(a, a.ToString("X2") + ": " + Lang.GetAttributeText(key)));
+            }
+            ListBoxProperty.ItemAuraTypeList = itemAura;
 
-            //ListBoxProperty.Ref
-            //TypeList
-            Dictionary<byte, ByteObjForListBox> RefInteractionTypeList = new Dictionary<byte, ByteObjForListBox>();
-            RefInteractionTypeList.Add(0x00, new ByteObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType00)));
-            RefInteractionTypeList.Add(0x01, new ByteObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType01Enemy)));
-            RefInteractionTypeList.Add(0x02, new ByteObjForListBox(0x02, "02: " + Lang.GetAttributeText(aLang.ListBoxRefInteractionType02EtcModel)));
-            ListBoxProperty.RefInteractionTypeList = RefInteractionTypeList;
-
-
-            //ListBoxProperty.ItemAuraTypeList
-            Dictionary<ushort, UshortObjForListBox> ItemAuraType = new Dictionary<ushort, UshortObjForListBox>();
-            ItemAuraType.Add(0x00, new UshortObjForListBox(0x00, "00: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType00)));
-            ItemAuraType.Add(0x01, new UshortObjForListBox(0x01, "01: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType01)));
-            ItemAuraType.Add(0x02, new UshortObjForListBox(0x02, "02: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType02)));
-            ItemAuraType.Add(0x03, new UshortObjForListBox(0x03, "03: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType03)));
-            ItemAuraType.Add(0x04, new UshortObjForListBox(0x04, "04: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType04)));
-            ItemAuraType.Add(0x05, new UshortObjForListBox(0x05, "05: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType05)));
-            ItemAuraType.Add(0x06, new UshortObjForListBox(0x06, "06: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType06)));
-            ItemAuraType.Add(0x07, new UshortObjForListBox(0x07, "07: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType07)));
-            ItemAuraType.Add(0x08, new UshortObjForListBox(0x08, "08: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType08)));
-            ItemAuraType.Add(0x09, new UshortObjForListBox(0x09, "09: " + Lang.GetAttributeText(aLang.ListBoxItemAuraType09)));
-            ListBoxProperty.ItemAuraTypeList = ItemAuraType;
-
-
-            //ListBoxProperty.SpecialTypeList
-            Dictionary<SpecialType, ByteObjForListBox> SpecialTypeList = new Dictionary<SpecialType, ByteObjForListBox>();
-            SpecialTypeList.Add(SpecialType.T00_GeneralPurpose, new ByteObjForListBox(0x00, Lang.GetAttributeText(aLang.SpecialType00_GeneralPurpose)));
-            SpecialTypeList.Add(SpecialType.T01_WarpDoor, new ByteObjForListBox(0x01, Lang.GetAttributeText(aLang.SpecialType01_WarpDoor)));
-            SpecialTypeList.Add(SpecialType.T02_CutSceneEvents, new ByteObjForListBox(0x02, Lang.GetAttributeText(aLang.SpecialType02_CutSceneEvents)));
-            SpecialTypeList.Add(SpecialType.T03_Items, new ByteObjForListBox(0x03, Lang.GetAttributeText(aLang.SpecialType03_Items)));
-            SpecialTypeList.Add(SpecialType.T04_GroupedEnemyTrigger, new ByteObjForListBox(0x04, Lang.GetAttributeText(aLang.SpecialType04_GroupedEnemyTrigger)));
-            SpecialTypeList.Add(SpecialType.T05_Message, new ByteObjForListBox(0x05, Lang.GetAttributeText(aLang.SpecialType05_Message)));
-            //SpecialTypeList.Add(SpecialType.T06_Unused, new ByteObjForListBox(0x06, Lang.GetAttributeText(aLang.SpecialType06_Unused)));
-            //SpecialTypeList.Add(SpecialType.T07_Unused, new ByteObjForListBox(0x07, Lang.GetAttributeText(aLang.SpecialType07_Unused)));
-            SpecialTypeList.Add(SpecialType.T08_TypeWriter, new ByteObjForListBox(0x08, Lang.GetAttributeText(aLang.SpecialType08_TypeWriter)));
-            //SpecialTypeList.Add(SpecialType.T09_Unused, new ByteObjForListBox(0x09, Lang.GetAttributeText(aLang.SpecialType09_Unused)));
-            SpecialTypeList.Add(SpecialType.T0A_DamagesThePlayer, new ByteObjForListBox(0x0A, Lang.GetAttributeText(aLang.SpecialType0A_DamagesThePlayer)));
-            SpecialTypeList.Add(SpecialType.T0B_FalseCollision, new ByteObjForListBox(0x0B, Lang.GetAttributeText(aLang.SpecialType0B_FalseCollision)));
-            //SpecialTypeList.Add(SpecialType.T0C_Unused, new ByteObjForListBox(0x0C, Lang.GetAttributeText(aLang.SpecialType0C_Unused)));
-            SpecialTypeList.Add(SpecialType.T0D_Unknown, new ByteObjForListBox(0x0D, Lang.GetAttributeText(aLang.SpecialType0D_Unknown)));
-            SpecialTypeList.Add(SpecialType.T0E_Crouch, new ByteObjForListBox(0x0E, Lang.GetAttributeText(aLang.SpecialType0E_Crouch)));
-            //SpecialTypeList.Add(SpecialType.T0F_Unused, new ByteObjForListBox(0x0F, Lang.GetAttributeText(aLang.SpecialType0F_Unused)));
-            SpecialTypeList.Add(SpecialType.T10_FixedLadderClimbUp, new ByteObjForListBox(0x10, Lang.GetAttributeText(aLang.SpecialType10_FixedLadderClimbUp)));
-            SpecialTypeList.Add(SpecialType.T11_ItemDependentEvents, new ByteObjForListBox(0x11, Lang.GetAttributeText(aLang.SpecialType11_ItemDependentEvents)));
-            SpecialTypeList.Add(SpecialType.T12_AshleyHideCommand, new ByteObjForListBox(0x12, Lang.GetAttributeText(aLang.SpecialType12_AshleyHideCommand)));
-            SpecialTypeList.Add(SpecialType.T13_LocalTeleportation, new ByteObjForListBox(0x13, Lang.GetAttributeText(aLang.SpecialType13_LocalTeleportation)));
-            SpecialTypeList.Add(SpecialType.T14_UsedForElevators, new ByteObjForListBox(0x14, Lang.GetAttributeText(aLang.SpecialType14_UsedForElevators)));
-            SpecialTypeList.Add(SpecialType.T15_AdaGrappleGun, new ByteObjForListBox(0x15, Lang.GetAttributeText(aLang.SpecialType15_AdaGrappleGun)));
-            ListBoxProperty.SpecialTypeList = SpecialTypeList;
-
+            // SpecialType
+            var specialTypes = new Dictionary<SpecialType, ByteObjForListBox>
+            {
+                { SpecialType.T00_GeneralPurpose,       new ByteObjForListBox(0x00, Lang.GetAttributeText(aLang.SpecialType00_GeneralPurpose)) },
+                { SpecialType.T01_WarpDoor,             new ByteObjForListBox(0x01, Lang.GetAttributeText(aLang.SpecialType01_WarpDoor)) },
+                { SpecialType.T02_CutSceneEvents,       new ByteObjForListBox(0x02, Lang.GetAttributeText(aLang.SpecialType02_CutSceneEvents)) },
+                { SpecialType.T03_Items,                new ByteObjForListBox(0x03, Lang.GetAttributeText(aLang.SpecialType03_Items)) },
+                { SpecialType.T04_GroupedEnemyTrigger,  new ByteObjForListBox(0x04, Lang.GetAttributeText(aLang.SpecialType04_GroupedEnemyTrigger)) },
+                { SpecialType.T05_Message,              new ByteObjForListBox(0x05, Lang.GetAttributeText(aLang.SpecialType05_Message)) },
+                { SpecialType.T08_TypeWriter,           new ByteObjForListBox(0x08, Lang.GetAttributeText(aLang.SpecialType08_TypeWriter)) },
+                { SpecialType.T0A_DamagesThePlayer,     new ByteObjForListBox(0x0A, Lang.GetAttributeText(aLang.SpecialType0A_DamagesThePlayer)) },
+                { SpecialType.T0B_FalseCollision,       new ByteObjForListBox(0x0B, Lang.GetAttributeText(aLang.SpecialType0B_FalseCollision)) },
+                { SpecialType.T0D_Unknown,              new ByteObjForListBox(0x0D, Lang.GetAttributeText(aLang.SpecialType0D_Unknown)) },
+                { SpecialType.T0E_Crouch,               new ByteObjForListBox(0x0E, Lang.GetAttributeText(aLang.SpecialType0E_Crouch)) },
+                { SpecialType.T10_FixedLadderClimbUp,   new ByteObjForListBox(0x10, Lang.GetAttributeText(aLang.SpecialType10_FixedLadderClimbUp)) },
+                { SpecialType.T11_ItemDependentEvents,  new ByteObjForListBox(0x11, Lang.GetAttributeText(aLang.SpecialType11_ItemDependentEvents)) },
+                { SpecialType.T12_AshleyHideCommand,    new ByteObjForListBox(0x12, Lang.GetAttributeText(aLang.SpecialType12_AshleyHideCommand)) },
+                { SpecialType.T13_LocalTeleportation,   new ByteObjForListBox(0x13, Lang.GetAttributeText(aLang.SpecialType13_LocalTeleportation)) },
+                { SpecialType.T14_UsedForElevators,     new ByteObjForListBox(0x14, Lang.GetAttributeText(aLang.SpecialType14_UsedForElevators)) },
+                { SpecialType.T15_AdaGrappleGun,        new ByteObjForListBox(0x15, Lang.GetAttributeText(aLang.SpecialType15_AdaGrappleGun)) },
+            };
+            ListBoxProperty.SpecialTypeList = specialTypes;
         }
 
         /// <summary>
-        /// prenche EnemiesList, EtcmodelsList, ItemsList em ListBoxProperty class
+        /// Populates the Enemies, EtcModels and Items list-box dictionaries.
         /// </summary>
         public static void StartSetListBoxsPropertybjsInfoLists()
         {
+            ListBoxProperty.EnemiesList = BuildUshortListBox(
+                DataBase.EnemiesIDs,
+                id => { string h = id.ToString("X4"); return h[2] == 'F' && h[3] == 'F'; });
 
-            //ListBoxProperty.EnemiesList
-            Dictionary<ushort, UshortObjForListBox> Enemies = new Dictionary<ushort, UshortObjForListBox>();
-            foreach (var item in DataBase.EnemiesIDs)
-            {
-                string ID = item.Value.GameId.ToString("X4");
-                if (ID[2] == 'F' && ID[3] == 'F'){ continue;}
-                if (ID == "FFFF") { continue; }
-                Enemies.Add(item.Value.GameId, new UshortObjForListBox(item.Value.GameId, item.Value.GameId.ToString("X4") + ": " + item.Value.Description));
-            }
-            Enemies = Enemies.OrderBy(o => o.Key).ToDictionary(p => p.Key, p => p.Value);
-            ListBoxProperty.EnemiesList = Enemies;
-
-
-
-            //ListBoxProperty.EtcmodelsList
-            Dictionary<ushort, UshortObjForListBox> EtcModels = new Dictionary<ushort, UshortObjForListBox>();
-            foreach (var item in DataBase.EtcModelIDs)
-            {
-                if (item.Value.GameId == ushort.MaxValue) { continue; }
-                EtcModels.Add(item.Value.GameId, new UshortObjForListBox(item.Value.GameId, item.Value.GameId.ToString("X4") + ": " + item.Value.Description));
-            }
-            EtcModels = EtcModels.OrderBy(o => o.Key).ToDictionary(p => p.Key, p => p.Value);
-            ListBoxProperty.EtcmodelsList = EtcModels;
-
-
-
-            //ListBoxProperty.ItemsList
-            Dictionary<ushort, UshortObjForListBox> Itens = new Dictionary<ushort, UshortObjForListBox>();
-            foreach (var item in DataBase.ItemsIDs)
-            {
-                if (item.Value.GameId == ushort.MaxValue) { continue; }
-                Itens.Add(item.Value.GameId, new UshortObjForListBox(item.Value.GameId, item.Value.GameId.ToString("X4") + ": " + item.Value.Description));
-            }
-            Itens = Itens.OrderBy(o => o.Key).ToDictionary(p => p.Key, p => p.Value);
-            ListBoxProperty.ItemsList = Itens;
+            ListBoxProperty.EtcmodelsList = BuildUshortListBox(DataBase.EtcModelIDs);
+            ListBoxProperty.ItemsList      = BuildUshortListBox(DataBase.ItemsIDs);
         }
 
-        /// <summary>
-        /// metodo destinado a instanciar os Nodes de Grupos;
-        /// </summary>
-        public static void StartCreateNodes() 
+        // Shared helper: build an ordered UshortObjForListBox dictionary from an ObjInfo dictionary.
+        private static Dictionary<ushort, UshortObjForListBox> BuildUshortListBox(
+            Dictionary<ushort, ObjInfo> source,
+            Func<ushort, bool> exclude = null)
         {
-            EnemyNodeGroup esl = new EnemyNodeGroup();
-            esl.Group = GroupType.ESL;
-            esl.Text = Lang.GetText(eLang.NodeESL);
-            esl.Name = Consts.NodeESL;
-            esl.ForeColor = Globals.NodeColorESL;
-            esl.NodeFont = Globals.TreeNodeFontText;
-
-            EtcModelNodeGroup ets = new EtcModelNodeGroup();
-            ets.Group = GroupType.ETS;
-            ets.Text = Lang.GetText(eLang.NodeETS);
-            ets.Name = Consts.NodeETS;
-            ets.ForeColor = Globals.NodeColorETS;
-            ets.NodeFont = Globals.TreeNodeFontText;
-
-            SpecialNodeGroup ita = new SpecialNodeGroup();
-            ita.Group = GroupType.ITA;
-            ita.Text = Lang.GetText(eLang.NodeITA);
-            ita.Name = Consts.NodeITA;
-            ita.ForeColor = Globals.NodeColorITA;
-            ita.NodeFont = Globals.TreeNodeFontText;
-
-            SpecialNodeGroup aev = new SpecialNodeGroup();
-            aev.Group = GroupType.AEV;
-            aev.Text = Lang.GetText(eLang.NodeAEV);
-            aev.Name = Consts.NodeAEV;
-            aev.ForeColor = Globals.NodeColorAEV;
-            aev.NodeFont = Globals.TreeNodeFontText;
-
-            ExtraNodeGroup extras = new ExtraNodeGroup();
-            extras.Group = GroupType.EXTRAS;
-            extras.Text = Lang.GetText(eLang.NodeEXTRAS);
-            extras.Name = Consts.NodeEXTRAS;
-            extras.ForeColor = Globals.NodeColorEXTRAS;
-            extras.NodeFont = Globals.TreeNodeFontText;
-
-            DataBase.NodeESL = esl;
-            DataBase.NodeETS = ets;
-            DataBase.NodeITA = ita;
-            DataBase.NodeAEV = aev;
-            DataBase.NodeEXTRAS = extras;
+            var dict = new Dictionary<ushort, UshortObjForListBox>();
+            foreach (var item in source)
+            {
+                if (item.Value.GameId == ushort.MaxValue) continue;
+                if (exclude != null && exclude(item.Value.GameId)) continue;
+                dict[item.Value.GameId] = new UshortObjForListBox(
+                    item.Value.GameId,
+                    item.Value.GameId.ToString("X4") + ": " + item.Value.Description);
+            }
+            return dict.OrderBy(o => o.Key).ToDictionary(p => p.Key, p => p.Value);
         }
 
         /// <summary>
-        /// metodo destinado a instanciar o node do ExtraGroup;
+        /// Creates the top-level TreeNode group nodes.
         /// </summary>
-        public static void StartExtraGroup() 
+        public static void StartCreateNodes()
+        {
+            DataBase.NodeESL    = CreateEnemyGroup();
+            DataBase.NodeETS    = CreateEtcModelGroup();
+            DataBase.NodeITA    = CreateSpecialGroup(GroupType.ITA,    eLang.NodeITA,    Consts.NodeITA,    Globals.NodeColorITA);
+            DataBase.NodeAEV    = CreateSpecialGroup(GroupType.AEV,    eLang.NodeAEV,    Consts.NodeAEV,    Globals.NodeColorAEV);
+            DataBase.NodeEXTRAS = CreateExtraGroup();
+        }
+
+        private static EnemyNodeGroup CreateEnemyGroup()
+        {
+            var n = new EnemyNodeGroup();
+            n.Group    = GroupType.ESL;
+            n.Text     = Lang.GetText(eLang.NodeESL);
+            n.Name     = Consts.NodeESL;
+            n.ForeColor = Globals.NodeColorESL;
+            n.NodeFont  = Globals.TreeNodeFontText;
+            return n;
+        }
+
+        private static EtcModelNodeGroup CreateEtcModelGroup()
+        {
+            var n = new EtcModelNodeGroup();
+            n.Group    = GroupType.ETS;
+            n.Text     = Lang.GetText(eLang.NodeETS);
+            n.Name     = Consts.NodeETS;
+            n.ForeColor = Globals.NodeColorETS;
+            n.NodeFont  = Globals.TreeNodeFontText;
+            return n;
+        }
+
+        private static SpecialNodeGroup CreateSpecialGroup(GroupType group, eLang textKey, string name, System.Drawing.Color color)
+        {
+            var n = new SpecialNodeGroup();
+            n.Group    = group;
+            n.Text     = Lang.GetText(textKey);
+            n.Name     = name;
+            n.ForeColor = color;
+            n.NodeFont  = Globals.TreeNodeFontText;
+            return n;
+        }
+
+        private static ExtraNodeGroup CreateExtraGroup()
+        {
+            var n = new ExtraNodeGroup();
+            n.Group    = GroupType.EXTRAS;
+            n.Text     = Lang.GetText(eLang.NodeEXTRAS);
+            n.Name     = Consts.NodeEXTRAS;
+            n.ForeColor = Globals.NodeColorEXTRAS;
+            n.NodeFont  = Globals.TreeNodeFontText;
+            return n;
+        }
+
+        /// <summary>
+        /// Initialises the ExtraGroup and wires it to the EXTRAS node.
+        /// </summary>
+        public static void StartExtraGroup()
         {
             DataBase.Extras = new Class.Files.ExtraGroup();
             DataBase.NodeEXTRAS.DisplayMethods = DataBase.Extras.DisplayMethods;
-            DataBase.NodeEXTRAS.MoveMethods = DataBase.Extras.MoveMethods;
+            DataBase.NodeEXTRAS.MoveMethods    = DataBase.Extras.MoveMethods;
         }
 
-        public static List<ushort> AllUshots() 
+        public static List<ushort> AllUshots()
         {
-            List<ushort> list = new List<ushort>();
+            var list = new List<ushort>(ushort.MaxValue);
             for (ushort i = 0; i < ushort.MaxValue; i++)
-            {
                 list.Add(i);
-            }
             return list;
         }
 
-        public static OpenTK.Vector4 ColorToVector4(Color color) 
+        public static OpenTK.Vector4 ColorToVector4(Color color)
         {
-            return new OpenTK.Vector4((float)color.R / byte.MaxValue, (float)color.G / byte.MaxValue, (float)color.B / byte.MaxValue, (float)color.A / byte.MaxValue);
+            return new OpenTK.Vector4(
+                color.R / 255f,
+                color.G / 255f,
+                color.B / 255f,
+                color.A / 255f);
         }
-
 
         public static Color Vector4ToColor(OpenTK.Vector4 color)
         {
-            return Color.FromArgb((int)Math.Round(color.W * byte.MaxValue), (int)Math.Round(color.X * byte.MaxValue), (int)Math.Round(color.Y * byte.MaxValue), (int)Math.Round(color.Z * byte.MaxValue));
+            return Color.FromArgb(
+                (int)Math.Round(color.W * 255f),
+                (int)Math.Round(color.X * 255f),
+                (int)Math.Round(color.Y * 255f),
+                (int)Math.Round(color.Z * 255f));
         }
 
-        public static float EnemyAngleToRad(short EnemyAngle)
+        public static float EnemyAngleToRad(short enemyAngle)
         {
-            //return ((2 * (float)Math.PI) * EnemyAngle) / 32768;
-            return (MathHelper.TwoPi * EnemyAngle) / 32768;
+            return (MathHelper.TwoPi * enemyAngle) / 32768f;
         }
 
-        public static short RadToEnemyAngle(float RadAngle)
+        public static short RadToEnemyAngle(float radAngle)
         {
-            //float temp = (32768 * RadAngle) / (2 * (float)Math.PI);
-            float temp = (32768 * RadAngle) / MathHelper.TwoPi;
-            if (temp > short.MaxValue) { temp = short.MaxValue; }
-            if (temp < short.MinValue) { temp = short.MinValue; }
+            float temp = (32768f * radAngle) / MathHelper.TwoPi;
+            temp = Math.Max(short.MinValue, Math.Min(short.MaxValue, temp));
             return (short)temp;
         }
 
-        public static float RadAngle1Scale(float RadAngle) 
+        /// <summary>
+        /// Wraps a radian angle into the range [0, 2π) without using a loop.
+        /// Fixes the original while-loop that could infinite-loop on extreme values.
+        /// </summary>
+        public static float RadAngle1Scale(float radAngle)
         {
-            float rad = RadAngle;
-            while (rad > MathHelper.TwoPi)
-            {
-                rad -= MathHelper.TwoPi;
-            }
-            while (rad < -MathHelper.TwoPi)
-            {
-                rad += MathHelper.TwoPi;
-            }
-            return rad;
+            if (float.IsNaN(radAngle) || float.IsInfinity(radAngle)) return 0f;
+            float twoPi = MathHelper.TwoPi;
+            float result = radAngle % twoPi;
+            if (result < 0f) result += twoPi;
+            return result;
         }
 
-        public static SpecialFileFormat GroupTypeToSpecialFileFormat(GroupType group) 
+        public static SpecialFileFormat GroupTypeToSpecialFileFormat(GroupType group)
         {
             switch (group)
             {
-                case GroupType.ITA:
-                    return SpecialFileFormat.ITA;
-                case GroupType.AEV:
-                    return SpecialFileFormat.AEV;
+                case GroupType.ITA: return SpecialFileFormat.ITA;
+                case GroupType.AEV: return SpecialFileFormat.AEV;
             }
             return SpecialFileFormat.NULL;
         }
 
         public static SpecialType ToSpecialType(byte specialType)
         {
-            if (specialType < 0x16)
-            {
-                return (SpecialType)specialType;
-            }
-            return SpecialType.UnspecifiedType;
+            return specialType < 0x16 ? (SpecialType)specialType : SpecialType.UnspecifiedType;
         }
 
         public static void ToMoveCheckLimits(ref Vector3[] value)
         {
             for (int i = 0; i < value.Length; i++)
             {
-                Vector3 vec = value[i];
-                if (float.IsNaN(vec.X) || float.IsInfinity(vec.X)) { vec.X = 0; }
-                if (float.IsNaN(vec.Y) || float.IsInfinity(vec.Y)) { vec.Y = 0; }
-                if (float.IsNaN(vec.Z) || float.IsInfinity(vec.Z)) { vec.Z = 0; }
-                if (vec.X > Consts.MyFloatMax) { vec.X = Consts.MyFloatMax; }
-                if (vec.X < -Consts.MyFloatMax) { vec.X = -Consts.MyFloatMax; }
-                if (vec.Y > Consts.MyFloatMax) { vec.Y = Consts.MyFloatMax; }
-                if (vec.Y < -Consts.MyFloatMax) { vec.Y = -Consts.MyFloatMax; }
-                if (vec.Z > Consts.MyFloatMax) { vec.Z = Consts.MyFloatMax; }
-                if (vec.Z < -Consts.MyFloatMax) { vec.Z = -Consts.MyFloatMax; }
-                value[i] = vec;
+                Vector3 v = value[i];
+                v.X = ClampFloat(v.X);
+                v.Y = ClampFloat(v.Y);
+                v.Z = ClampFloat(v.Z);
+                value[i] = v;
             }
         }
 
-        public static Vector3[] GetObjScale_ToMove_Null(ushort ID) { return null; }
+        // Clamp a float to the safe range used for move coordinates.
+        private static float ClampFloat(float f)
+        {
+            if (float.IsNaN(f) || float.IsInfinity(f)) return 0f;
+            return Math.Max(-Consts.MyFloatMax, Math.Min(Consts.MyFloatMax, f));
+        }
+
+        public static Vector3[] GetObjScale_ToMove_Null(ushort ID) => null;
         public static void SetObjScale_ToMove_Null(ushort ID, Vector3[] value) { }
 
         /// <summary>
-        /// Recarrega os arquivos Json e seus textos;
+        /// Reloads all JSON data files and refreshes the property lists.
         /// </summary>
-        public static void ReloadJsonFiles() 
+        public static void ReloadJsonFiles()
         {
             StartLoadRoomInfoList();
             StartLoadObjsInfoLists();
@@ -527,7 +462,7 @@ namespace Re4QuadExtremeEditor.src
         }
 
         /// <summary>
-        /// Recarrega os modelos 3d;
+        /// Reloads all 3-D models and frees previous GPU resources.
         /// </summary>
         public static void ReloadModels()
         {
@@ -544,45 +479,41 @@ namespace Re4QuadExtremeEditor.src
             GC.Collect();
         }
 
-
-        public static UshortObjForListBox[] ItemRotationOrderForListBox() 
+        public static UshortObjForListBox[] ItemRotationOrderForListBox()
         {
-            UshortObjForListBox[] list = new UshortObjForListBox[15];
-            list[0] = new UshortObjForListBox(0, Lang.GetText(eLang.RotationXYZ));
-            list[1] = new UshortObjForListBox(1, Lang.GetText(eLang.RotationXZY));
-            list[2] = new UshortObjForListBox(2, Lang.GetText(eLang.RotationYXZ));
-            list[3] = new UshortObjForListBox(3, Lang.GetText(eLang.RotationYZX));
-            list[4] = new UshortObjForListBox(4, Lang.GetText(eLang.RotationZYX));
-            list[5] = new UshortObjForListBox(5, Lang.GetText(eLang.RotationZXY));
-            list[6] = new UshortObjForListBox(6, Lang.GetText(eLang.RotationXY));
-            list[7] = new UshortObjForListBox(7, Lang.GetText(eLang.RotationXZ));
-            list[8] = new UshortObjForListBox(8, Lang.GetText(eLang.RotationYX));
-            list[9] = new UshortObjForListBox(9, Lang.GetText(eLang.RotationYZ));
-            list[10] = new UshortObjForListBox(10, Lang.GetText(eLang.RotationZX));
-            list[11] = new UshortObjForListBox(11, Lang.GetText(eLang.RotationZY));
-            list[12] = new UshortObjForListBox(12, Lang.GetText(eLang.RotationX));
-            list[13] = new UshortObjForListBox(13, Lang.GetText(eLang.RotationY));
-            list[14] = new UshortObjForListBox(14, Lang.GetText(eLang.RotationZ));
-
-            return list;
+            return new UshortObjForListBox[]
+            {
+                new UshortObjForListBox(0,  Lang.GetText(eLang.RotationXYZ)),
+                new UshortObjForListBox(1,  Lang.GetText(eLang.RotationXZY)),
+                new UshortObjForListBox(2,  Lang.GetText(eLang.RotationYXZ)),
+                new UshortObjForListBox(3,  Lang.GetText(eLang.RotationYZX)),
+                new UshortObjForListBox(4,  Lang.GetText(eLang.RotationZYX)),
+                new UshortObjForListBox(5,  Lang.GetText(eLang.RotationZXY)),
+                new UshortObjForListBox(6,  Lang.GetText(eLang.RotationXY)),
+                new UshortObjForListBox(7,  Lang.GetText(eLang.RotationXZ)),
+                new UshortObjForListBox(8,  Lang.GetText(eLang.RotationYX)),
+                new UshortObjForListBox(9,  Lang.GetText(eLang.RotationYZ)),
+                new UshortObjForListBox(10, Lang.GetText(eLang.RotationZX)),
+                new UshortObjForListBox(11, Lang.GetText(eLang.RotationZY)),
+                new UshortObjForListBox(12, Lang.GetText(eLang.RotationX)),
+                new UshortObjForListBox(13, Lang.GetText(eLang.RotationY)),
+                new UshortObjForListBox(14, Lang.GetText(eLang.RotationZ)),
+            };
         }
 
         /// <summary>
-        /// carrega a lista de idiomas disponiveis para selecionar no programa
+        /// Loads available language list from disk.
         /// </summary>
         public static void StartLoadLangList()
         {
             if (Directory.Exists(Consts.langDiretory) && File.Exists(Consts.LangListFileDiretory))
-            {
                 Globals.Langs.AddRange(JSON.LangListFile.parseLangList(Consts.LangListFileDiretory));
-            }
-        
         }
 
         /// <summary>
-        /// carrega o conteudo da tradução selecionada.
+        /// Loads the selected translation file.
         /// </summary>
-        public static void StartLoadLangFile() 
+        public static void StartLoadLangFile()
         {
             if (Globals.BackupConfigs.LoadLangTranslation)
             {
@@ -594,108 +525,65 @@ namespace Re4QuadExtremeEditor.src
                     LangFile.parseLang(Consts.langDiretory + lang.LangFilePath);
                 }
             }
-       
         }
 
         /// <summary>
-        /// preenche as listagens de EnemiesIDs, EtcModelIDs, ItemsIDs, RoomList; com a tradução
+        /// Applies the loaded translation strings to all data lists.
         /// </summary>
-        public static void StartSetTextTranslationLists() 
+        public static void StartSetTextTranslationLists()
         {
-            if (Lang.LoadedTranslation == true)
+            if (!Lang.LoadedTranslation) return;
+
+            ApplyTranslationToObjInfo(DataBase.EnemiesIDs,  Lang.Lists.Enemy);
+            ApplyTranslationToObjInfo(DataBase.EtcModelIDs, Lang.Lists.EtcModel);
+            ApplyTranslationToObjInfo(DataBase.ItemsIDs,    Lang.Lists.Item);
+
+            foreach (var item in DataBase.RoomList)
             {
-                foreach (var item in DataBase.EnemiesIDs)
+                if (Lang.Lists.Room.ContainsKey(item.RoomKey))
                 {
-                    string Key = item.Key.ToString("X4");
-                    if (Lang.Lists.Enemy.ContainsKey(Key))
-                    {
-                        if (Lang.Lists.Enemy[Key].Key != null)
-                        {
-                            item.Value.Name = Lang.Lists.Enemy[Key].Key;
-                        }
-                        if (Lang.Lists.Enemy[Key].Value != null)
-                        {
-                            item.Value.Description = Lang.Lists.Enemy[Key].Value;
-                        }
-                    }
-                }
-
-
-                foreach (var item in DataBase.EtcModelIDs)
-                {
-                    string Key = item.Key.ToString("X4");
-                    if (Lang.Lists.EtcModel.ContainsKey(Key))
-                    {
-                        if (Lang.Lists.EtcModel[Key].Key != null)
-                        {
-                            item.Value.Name = Lang.Lists.EtcModel[Key].Key;
-                        }
-                        if (Lang.Lists.EtcModel[Key].Value != null)
-                        {
-                            item.Value.Description = Lang.Lists.EtcModel[Key].Value;
-                        }
-                    }
-                }
-
-
-                foreach (var item in DataBase.ItemsIDs)
-                {
-                    string Key = item.Key.ToString("X4");
-                    if (Lang.Lists.Item.ContainsKey(Key))
-                    {
-                        if (Lang.Lists.Item[Key].Key != null)
-                        {
-                            item.Value.Name = Lang.Lists.Item[Key].Key;
-                        }
-                        if (Lang.Lists.Item[Key].Value != null)
-                        {
-                            item.Value.Description = Lang.Lists.Item[Key].Value;
-                        }
-                    }
-                }
-
-
-                foreach (var item in DataBase.RoomList)
-                {
-                    //item.RoomKey
-                    if (Lang.Lists.Room.ContainsKey(item.RoomKey))
-                    {
-                        if (Lang.Lists.Room[item.RoomKey].Key != null)
-                        {
-                            item.Name = Lang.Lists.Room[item.RoomKey].Key;
-                        }
-                        if (Lang.Lists.Room[item.RoomKey].Value != null)
-                        {
-                            item.Description = Lang.Lists.Room[item.RoomKey].Value;
-                        }
-                    }
+                    var entry = Lang.Lists.Room[item.RoomKey];
+                    if (entry.Key   != null) item.Name        = entry.Key;
+                    if (entry.Value != null) item.Description = entry.Value;
                 }
             }
-            
+        }
+
+        // Shared helper: apply translation strings to an ObjInfo dictionary.
+        private static void ApplyTranslationToObjInfo(
+            Dictionary<ushort, ObjInfo> dict,
+            Dictionary<string, System.Collections.Generic.KeyValuePair<string,string>> translations)
+        {
+            foreach (var item in dict)
+            {
+                string key = item.Key.ToString("X4");
+                if (translations.ContainsKey(key))
+                {
+                    var entry = translations[key];
+                    if (entry.Key   != null) item.Value.Name        = entry.Key;
+                    if (entry.Value != null) item.Value.Description = entry.Value;
+                }
+            }
         }
 
         /// <summary>
-        /// define o OpenGL usado, se vai ser OldOpenGL (2.0 a 3.3), ou ModernOpenGL (a partir de 4.0)
+        /// Detects the OpenGL version and sets Globals.UseOldGL accordingly.
+        /// Forces modern or legacy path when the config overrides are set.
         /// </summary>
         public static void Defines_The_OpenGL_Used()
         {
-            //Globals.UseOldGL
-            //Globals.OpenGLVersion
             try
             {
-                string glString = Globals.OpenGLVersion.Trim();
+                string glString = (Globals.OpenGLVersion ?? string.Empty).Trim();
 
                 if (glString.StartsWith("1.") || glString.StartsWith("2.") || glString.StartsWith("3."))
-                {
                     Globals.UseOldGL = true;
-                }
 
                 if (glString.StartsWith("1."))
                 {
                     System.Windows.Forms.MessageBox.Show(
                         "Error: You have an outdated version of OpenGL, which is not supported by this program." +
-                        " The program will now exit.\n\n" +
-                        "OpenGL version: [" + Globals.OpenGLVersion + "]\n",
+                        " The program will now exit.\n\nOpenGL version: [" + Globals.OpenGLVersion + "]\n",
                         "OpenGL version error:",
                         System.Windows.Forms.MessageBoxButtons.OK,
                         System.Windows.Forms.MessageBoxIcon.Error);
@@ -704,28 +592,15 @@ namespace Re4QuadExtremeEditor.src
             catch (Exception ex)
             {
                 System.Windows.Forms.MessageBox.Show(
-                      "Error: " +
-                      ex.Message,
-                      "Error detecting OpenGL version:",
-                      System.Windows.Forms.MessageBoxButtons.OK,
-                      System.Windows.Forms.MessageBoxIcon.Error);
+                    "Error: " + ex.Message,
+                    "Error detecting OpenGL version:",
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Error);
             }
 
-            if (Globals.BackupConfigs.ForceUseModernOpenGL)
-            {
-                Globals.UseOldGL = false;
-            }
-            if (Globals.BackupConfigs.ForceUseOldOpenGL)
-            {
-                Globals.UseOldGL = true;
-            }
+            // Config overrides take priority over auto-detection.
+            if (Globals.BackupConfigs.ForceUseModernOpenGL) Globals.UseOldGL = false;
+            if (Globals.BackupConfigs.ForceUseOldOpenGL)    Globals.UseOldGL = true;
         }
-
-
-
-
-
     }
-
-
 }
