@@ -16,105 +16,56 @@ namespace Re4QuadExtremeEditor.src
 {
     /// <summary>
     /// Renders everything in the GL scene.
-    /// Improvements: anti-aliasing, smooth lines, LOD support, high-quality depth.
+    /// Improvements: anti-aliasing, smooth lines, high-quality textures/colors, LOD fix.
     /// </summary>
     public static class TheRender
     {
-        // ── High-Quality GL Initialization ───────────────────────────────────
+        // Camera position for smooth rendering
+        public static Vector3 CameraPosition = Vector3.Zero;
 
+        // ——— High-Quality GL Initialization ————————————————————————————
         /// <summary>
-        /// Call once in GlControl_Load after the base GL setup.
-        /// Enables smooth lines, anti-aliasing hints, and better depth precision.
+        /// Call once in GlControl_Load. Enables smooth lines, anti-aliasing,
+        /// high-quality texture filtering, and better depth precision.
         /// </summary>
         public static void InitHighQualityGL()
         {
-            // Smooth lines — eliminates jagged/aliased bounding box edges
             GL.Enable(EnableCap.LineSmooth);
             GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
-
-            // Smooth points
             GL.Enable(EnableCap.PointSmooth);
             GL.Hint(HintTarget.PointSmoothHint, HintMode.Nicest);
-
-            // Perspective correction hint — better texture mapping quality
+            GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
-
-            // Alpha blending — smooth transparent zones
+            GL.Hint(HintTarget.FogHint, HintMode.Nicest);
+            GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
+            // High-quality texture filtering
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            // Blending for smooth transparent edges and anti-aliased lines
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-            // Tighter depth testing — reduces z-fighting at medium distances
+            // Better depth precision
             GL.DepthFunc(DepthFunction.Lequal);
-            GL.ClearDepth(1.0f);
-
-            // Crisp line width for bounding boxes (was 1.5f)
-            GL.LineWidth(2.0f);
-
-            // Larger point size for vertex indicators
-            GL.PointSize(4.0f);
-        }
-
-        /// <summary>
-        /// Current camera world position. Set each frame in Render().
-        /// Used for LOD and distance-based quality decisions.
-        /// </summary>
-        public static Vector3 CameraPosition = Vector3.Zero;
-
-        // ── LOD (Level of Detail) ─────────────────────────────────────────────
-        /// <summary>
-        /// If > 0, objects beyond this distance skip 3D model and show bounding box only.
-        /// Set to 0 to DISABLE LOD (all models always visible — fixes "half body" issue).
-        /// </summary>
-        public static float LOD_MaxModelDistance = 0f; // 0 = disabled
-
-        private static float DistanceSq(Vector3 a, Vector3 b)
-        {
-            float dx = a.X - b.X, dy = a.Y - b.Y, dz = a.Z - b.Z;
-            return dx * dx + dy * dy + dz * dz;
+            GL.ClearDepth(1.0);
+            // Crisp lines
+            GL.LineWidth(1.5f);
+            // Dithering for smoother color gradients
+            GL.Enable(EnableCap.Dither);
+            // Color material for vibrant accurate colors
+            GL.Enable(EnableCap.ColorMaterial);
+            GL.Enable(EnableCap.Normalize);
         }
 
         #region info
         /*
-        Para rederização Normal usar:
+        Para renderizacao Normal usar:
         TheRender.Render(ref camMtx, ref ProjMatrix, float);
-
-        Para seleção de objeto usa-se a renderização "ToSelect":
+        Para selecao de objeto usa-se a renderizacao "ToSelect":
         TheRender.RenderToSelect(ref camMtx, ref ProjMatrix);
-
-        -------
         Referente a escala das coordenadas:
-        Toda a escala do que esta sendo renderizado é 100 vezes menor que a escala de coordenadas dos arquivos AEV, ITA e ETS;
-
-        Sendo para os arquivos PMD:
-        * pmds de itens, inimigos e etcmodel, estão na scala 1 pra 1 no oque esta sendo renderizado,
-        * os pmds dos cenarios são 10 vezes menor que os pmds citados acima.
-
-        Para as coordenas do ESL:
-        * os valores shorts das coordenadas devem ser multiplicado por 10 para estar na mesma escala que o AEV.
-
-        Para outros arquivos:
-        * caso na edição de novos arquivos, dividir as coordenadas por 100, pois estão na mesma escala que o AEV.
-
-        -----
-        Referente a renderização para a seleção:
-        Todo o fundo é renderizado na cor branca (white) int: 0xFFFFFFFF
-        Todo o model 3d do cenario (Room) é renderizado na cor preta (black) int: 0x000000FF
-
-        Todos os objtos são rederizados por cores, nas quais são definidas pelo id e grupo do objeto, Sendo
-
-        O primeiro e segundo byte da cor o ID (lineID) do objeto
-        E o terceiro byte o Grupo do objeto
-        E o quarto byte é 0xFF pois tem que ser uma cor solida.
-
-        Nota: no openGL as cores vão de 0 a 1, então todos os valores devem ser divididos por 255;
-
-        Os numeros dos grupos não podem ser 0 e 255, os outros valores podem ser usado, sendo os ja usados:
-        1 = ESL
-        2 = ETS
-        3 = ITA
-        4 = AEV
-        5 = EXTRAS
-
+        Toda a escala do que esta sendo renderizado eh 100 vezes menor que a escala de coordenadas dos arquivos AEV, ITA e ETS;
+        Os numeros dos grupos nao podem ser 0 e 255, os outros valores podem ser usado:
+        1 = ESL, 2 = ETS, 3 = ITA, 4 = AEV, 5 = EXTRAS
         */
         #endregion
 
@@ -158,7 +109,8 @@ namespace Re4QuadExtremeEditor.src
                     positionX -= spaceBetweenTheLines;
                     positionZ -= spaceBetweenTheLines;
                 }
-                positionX = 0; positionZ = 0;
+                positionX = 0;
+                positionZ = 0;
                 for (int i = 0; i <= numberLines2; i++)
                 {
                     GL.Vertex3(positionX, 0, -endPoint);
@@ -176,16 +128,9 @@ namespace Re4QuadExtremeEditor.src
 
         public static void Render(ref Matrix4 camMtx, ref Matrix4 ProjMatrix, float objY)
         {
-            // Extract camera position from view matrix for LOD calculations
-            // View matrix inverse gives camera world position
-            Matrix4 invView = Matrix4.Invert(camMtx);
-            CameraPosition = invView.Row3.Xyz;
-
             GL.ClearColor(Globals.SkyColor);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            // Re-enable quality settings each frame (some states may be reset by drivers)
-            GL.Enable(EnableCap.LineSmooth);
+            // High-quality blending
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
@@ -205,13 +150,989 @@ namespace Re4QuadExtremeEditor.src
             DataBase.ShaderBoundingBox.SetMatrix4("view", camMtx);
             DataBase.ShaderBoundingBox.SetMatrix4("projection", ProjMatrix);
 
-            if (Globals.RenderEnemyESL) RenderEnemyESL();
-            if (Globals.RenderExtraObjs) RenderExtras();
-            if (Globals.RenderEventsAEV) RenderAEV();
-            if (Globals.RenderItemsITA) RenderITA();
-            if (Globals.RenderEtcmodelETS) RenderEtcModelETS();
-            if (Globals.CamGridEnable) drawGrid(objY);
+            if (Globals.RenderEnemyESL) { RenderEnemyESL(); }
+            if (Globals.RenderExtraObjs) { RenderExtras(); }
+            if (Globals.RenderEventsAEV) { RenderAEV(); }
+            if (Globals.RenderItemsITA) { RenderITA(); }
+            if (Globals.RenderEtcmodelETS) { RenderEtcModelETS(); }
+            if (Globals.CamGridEnable) { drawGrid(objY); }
 
             RenderPosTriggerZoneBox();
             GL.Finish();
         }
+        private static void RenderEnemyESL()
+        {
+            Vector4 mColor = Globals.GL_ColorESL;
+            Vector4 mColorSelected = Globals.GL_ColorSelected;
+
+            DataBase.ShaderObjs.Use();
+            DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+
+            foreach (TreeNode item in DataBase.NodeESL.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+                ushort EnemiesID = DataBase.NodeESL.MethodsForGL.GetEnemyModelID(ID);
+                ushort EnemyRoom = DataBase.NodeESL.MethodsForGL.GetEnemyRoom(ID);
+                byte EnableState = DataBase.NodeESL.MethodsForGL.GetEnableState(ID);
+
+                if (Globals.RenderDisabledEnemy || EnableState != 0)
+                {
+                    if (Globals.RenderDontShowOnlyDefinedRoom || EnemyRoom == Globals.RenderEnemyFromDefinedRoom)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", DataBase.NodeESL.MethodsForGL.GetRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(DataBase.NodeESL.MethodsForGL.GetOldRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", DataBase.NodeESL.MethodsForGL.GetPosition(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode()))
+                        {
+                            DataBase.ShaderBoundingBox.SetVector4("mColor", mColorSelected);
+                        }
+
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetMatrix4("mRotation", DataBase.NodeESL.MethodsForGL.GetRotation(ID));
+                        DataBase.ShaderObjs.SetAltRotation(DataBase.NodeESL.MethodsForGL.GetOldRotation(ID));
+                        DataBase.ShaderObjs.SetVector3("mPosition", DataBase.NodeESL.MethodsForGL.GetPosition(ID));
+
+                        if (!DataBase.EnemiesIDs.ContainsKey(EnemiesID))
+                        {
+                            string eId = EnemiesID.ToString("X4");
+                            eId = eId[0].ToString() + eId[1].ToString() + "FF";
+                            EnemiesID = ushort.Parse(eId, System.Globalization.NumberStyles.HexNumber);
+                        }
+
+                        if (DataBase.EnemiesIDs.ContainsKey(EnemiesID) && !DataBase.EnemiesIDs[EnemiesID].UseInternalModel && DataBase.EnemiesModels.Models.ContainsKey(DataBase.EnemiesIDs[EnemiesID].ModelKey))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.EnemiesModels.RenderModel(DataBase.EnemiesIDs[EnemiesID].ModelKey);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.EnemiesModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].UpperBoundary + boundOff, DataBase.EnemiesModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].LowerBoundary - boundOff);
+                        }
+                        else if (DataBase.EnemiesIDs.ContainsKey(EnemiesID) && DataBase.EnemiesIDs[EnemiesID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.EnemiesIDs[EnemiesID].ModelKey))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.InternalModels.RenderModel(DataBase.EnemiesIDs[EnemiesID].ModelKey);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.InternalModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].UpperBoundary + boundOff, DataBase.InternalModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(boundNoneEnemy, -boundNoneEnemy);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void RenderEtcModelETS()
+        {
+            Vector4 mColor = Globals.GL_ColorETS;
+            Vector4 mColorSelected = Globals.GL_ColorSelected;
+
+            foreach (TreeNode item in DataBase.NodeETS.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+
+                Vector3 boundOffFix = boundOff;
+                Vector3 scale = DataBase.NodeETS.MethodsForGL.GetScale(ID);
+                if (scale.X < 0) { boundOffFix.X *= -1; }
+                if (scale.Y < 0) { boundOffFix.Y *= -1; }
+                if (scale.Z < 0) { boundOffFix.Z *= -1; }
+
+                DataBase.ShaderBoundingBox.Use();
+                DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderBoundingBox.SetMatrix4("mRotation", DataBase.NodeETS.MethodsForGL.GetAngle(ID));
+                DataBase.ShaderBoundingBox.SetAltRotation(DataBase.NodeETS.MethodsForGL.GetOldRotation(ID));
+                DataBase.ShaderBoundingBox.SetVector3("mPosition", DataBase.NodeETS.MethodsForGL.GetPosition(ID));
+                DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode()))
+                {
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", mColorSelected);
+                }
+
+                DataBase.ShaderObjs.Use();
+                DataBase.ShaderObjs.SetVector3("mScale", DataBase.NodeETS.MethodsForGL.GetScale(ID));
+                DataBase.ShaderObjs.SetMatrix4("mRotation", DataBase.NodeETS.MethodsForGL.GetAngle(ID));
+                DataBase.ShaderObjs.SetAltRotation(DataBase.NodeETS.MethodsForGL.GetOldRotation(ID));
+                DataBase.ShaderObjs.SetVector3("mPosition", DataBase.NodeETS.MethodsForGL.GetPosition(ID));
+
+                ushort EtcModelID = DataBase.NodeETS.MethodsForGL.GetEtcModelID(ID);
+
+                if (DataBase.EtcModelIDs.ContainsKey(EtcModelID) && !DataBase.EtcModelIDs[EtcModelID].UseInternalModel && DataBase.EtcModels.Models.ContainsKey(DataBase.EtcModelIDs[EtcModelID].ModelKey))
+                {
+                    DataBase.ShaderObjs.Start();
+                    DataBase.EtcModels.RenderModel(DataBase.EtcModelIDs[EtcModelID].ModelKey);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw((DataBase.EtcModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].UpperBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) + boundOffFix, (DataBase.EtcModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].LowerBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) - boundOffFix);
+                }
+                else if (DataBase.EtcModelIDs.ContainsKey(EtcModelID) && DataBase.EtcModelIDs[EtcModelID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.EtcModelIDs[EtcModelID].ModelKey))
+                {
+                    DataBase.ShaderObjs.Start();
+                    DataBase.InternalModels.RenderModel(DataBase.EtcModelIDs[EtcModelID].ModelKey);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw((DataBase.InternalModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].UpperBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) + boundOffFix, (DataBase.InternalModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].LowerBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) - boundOffFix);
+                }
+                else
+                {
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(boundNoneEtcModel, -boundNoneEtcModel);
+                }
+            }
+        }
+
+        private static void RenderITA()
+        {
+            foreach (TreeNode item in DataBase.NodeITA.Nodes)
+            {
+                RenderSpecial((Object3D)item, DataBase.NodeITA.MethodsForGL);
+            }
+        }
+
+        private static void RenderAEV()
+        {
+            foreach (TreeNode item in DataBase.NodeAEV.Nodes)
+            {
+                RenderSpecial((Object3D)item, DataBase.NodeAEV.MethodsForGL);
+            }
+        }
+        private static void RenderSpecial(Object3D item, Class.ObjMethods.SpecialMethodsForGL MethodsForGL)
+        {
+            Vector4 mColor = new Vector4(0, 0, 0, 1f);
+            ushort ID = item.ObjLineRef;
+            GroupType Group = item.Group;
+
+            if (Group == GroupType.ITA) { mColor = Globals.GL_ColorITA; }
+            else if (Group == GroupType.AEV) { mColor = Globals.GL_ColorAEV; }
+
+            if (Globals.UseMoreSpecialColors)
+            {
+                mColor = ReturnMoreSpecialColor(MethodsForGL.GetSpecialType(ID), mColor);
+            }
+
+            if (MethodsForGL.GetSpecialType(ID) == SpecialType.T03_Items)
+            {
+                if (Globals.RenderItemTriggerZone)
+                {
+                    DataBase.ShaderBoundingBox.Use();
+                    DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                    DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                    DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                    DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                    Vector4 TriggerZoneColor = Globals.GL_ColorItemTriggerZone;
+                    if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode()))
+                    {
+                        TriggerZoneColor = Globals.GL_ColorItemTriggerZoneSelected;
+                    }
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", TriggerZoneColor);
+                    DataBase.ShaderBoundingBox.Start();
+                    if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category01)
+                    {
+                        BoundingBox.drawTriggerZone(MethodsForGL.GetTriggerZone(ID));
+                    }
+                    else if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category02)
+                    {
+                        Vector2[] v = MethodsForGL.GetCircleTriggerZone(ID);
+                        BoundingBox.drawCircleTriggerZone(v[0], v[1], v[2].X);
+                    }
+                }
+
+                DataBase.ShaderBoundingBox.Use();
+                DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetItemRotation(ID));
+                DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetItemAltRotation(ID));
+                DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetItemPosition(ID));
+                if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode()))
+                {
+                    mColor = Globals.GL_ColorSelected;
+                }
+                DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+
+                DataBase.ShaderObjs.Use();
+                DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetItemRotation(ID));
+                DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetItemAltRotation(ID));
+                DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetItemPosition(ID));
+
+                ushort item_ID = MethodsForGL.GetItemModelID(ID);
+
+                if (DataBase.ItemsIDs.ContainsKey(item_ID) && !DataBase.ItemsIDs[item_ID].UseInternalModel && DataBase.ItemsModels.Models.ContainsKey(DataBase.ItemsIDs[item_ID].ModelKey))
+                {
+                    DataBase.ShaderObjs.Start();
+                    DataBase.ItemsModels.RenderModel(DataBase.ItemsIDs[item_ID].ModelKey);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(DataBase.ItemsModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].UpperBoundary + boundOff, DataBase.ItemsModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].LowerBoundary - boundOff);
+                }
+                else if (DataBase.ItemsIDs.ContainsKey(item_ID) && DataBase.ItemsIDs[item_ID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.ItemsIDs[item_ID].ModelKey))
+                {
+                    DataBase.ShaderObjs.Start();
+                    DataBase.InternalModels.RenderModel(DataBase.ItemsIDs[item_ID].ModelKey);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(DataBase.InternalModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].UpperBoundary + boundOff, DataBase.InternalModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].LowerBoundary - boundOff);
+                }
+                else
+                {
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(boundNoneItem, -boundNoneItem);
+                }
+
+                float ItemTrigggerRadius = MethodsForGL.GetItemTrigggerRadius(ID);
+                if (Globals.RenderItemTriggerRadius && ItemTrigggerRadius != 0)
+                {
+                    DataBase.ShaderBoundingBox.Use();
+                    DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                    DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                    DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                    DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetItemPosition(ID));
+                    Vector4 RadiusColor = Globals.GL_ColorItemTrigggerRadius;
+                    if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode()))
+                    {
+                        RadiusColor = Globals.GL_ColorItemTrigggerRadiusSelected;
+                    }
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", RadiusColor);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.drawItemTrigggerRadius(ItemTrigggerRadius);
+                }
+            }
+            else
+            {
+                if (Globals.RenderSpecialTriggerZone)
+                {
+                    DataBase.ShaderBoundingBox.Use();
+                    DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                    DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                    DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                    DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                    if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                    DataBase.ShaderBoundingBox.Start();
+                    if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category01)
+                    {
+                        BoundingBox.drawTriggerZone(MethodsForGL.GetTriggerZone(ID));
+                    }
+                    else if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category02)
+                    {
+                        Vector2[] v = MethodsForGL.GetCircleTriggerZone(ID);
+                        BoundingBox.drawCircleTriggerZone(v[0], v[1], v[2].X);
+                    }
+                }
+            }
+        }
+        private static void RenderExtras()
+        {
+            foreach (TreeNode item in DataBase.NodeEXTRAS.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+                var association = DataBase.Extras.AssociationList[ID];
+                if (association.FileFormat == SpecialFileFormat.AEV && Globals.RenderEventsAEV)
+                {
+                    RenderExtrasSubPart((Object3D)item, DataBase.FileAEV.ExtrasMethodsForGL, association.LineID, association.SubObjID, SpecialFileFormat.AEV);
+                }
+                else if (association.FileFormat == SpecialFileFormat.ITA && Globals.RenderItemsITA)
+                {
+                    RenderExtrasSubPart((Object3D)item, DataBase.FileITA.ExtrasMethodsForGL, association.LineID, association.SubObjID, SpecialFileFormat.ITA);
+                }
+            }
+        }
+
+        private static void RenderExtrasSubPart(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat)
+        {
+            SpecialType specialType = MethodsForGL.GetSpecialType(ID);
+            Vector4 mColor = Globals.GL_ColorEXTRAS;
+
+            switch (specialType)
+            {
+                case SpecialType.T01_WarpDoor:
+                    if (Globals.RenderExtraWarpDoor)
+                    {
+                        if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T01_DoorWarp; }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetWarpRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetWarpAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetWarpRotation(ID));
+                        DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetWarpAltRotation(ID));
+                        DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyWarpPoint))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.InternalModels.RenderModel(Consts.ModelKeyWarpPoint);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyWarpPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyWarpPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
+                case SpecialType.T13_LocalTeleportation:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T13_LocalTeleportation; }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLocalTeleportationPoint))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.InternalModels.RenderModel(Consts.ModelKeyLocalTeleportationPoint);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLocalTeleportationPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLocalTeleportationPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
+                case SpecialType.T12_AshleyHideCommand:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T12_AshleyHideCommand; }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                        DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetAshleyPoint(ID));
+                        if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderObjs.SetMatrix4("mRotation", Matrix4.Identity);
+                        DataBase.ShaderObjs.SetAltRotation(OldRotation.Identity);
+                        DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetAshleyPoint(ID));
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyAshleyPoint))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.InternalModels.RenderModel(Consts.ModelKeyAshleyPoint);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyAshleyPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyAshleyPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+                        }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                        DataBase.ShaderBoundingBox.Start();
+                        BoundingBox.drawTriggerZone(MethodsForGL.GetAshleyHidingZoneCorner(ID));
+                    }
+                    break;
+                case SpecialType.T15_AdaGrappleGun:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        if (SubId == 0) { RenderGrappleGun(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetFirtPosition(ID)); }
+                        else if (SubId == 1) { RenderGrappleGun(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetGrappleGunEndPosition(ID)); }
+                        else if (SubId == 2 && MethodsForGL.GetGrappleGunParameter3(ID) != 0) { RenderGrappleGun(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetGrappleGunThirdPosition(ID)); }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        private static void RenderExtrasSubPart_T10_Ladder(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, Vector4 mColor)
+        {
+            if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T10_FixedLadderClimbUp; }
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+            DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+            DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+            if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+            DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+            DataBase.ShaderObjs.Use();
+            DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+            DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+            DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+
+            if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderPoint)
+                && DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderObj))
+            {
+                DataBase.ShaderObjs.Start();
+                DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderPoint);
+                DataBase.ShaderBoundingBox.Start();
+                BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].LowerBoundary - boundOff);
+
+                sbyte stepCount = MethodsForGL.GetLadderStepCount(ID);
+                if (stepCount >= 2)
+                {
+                    float maxHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                    DataBase.ShaderObjs.Start();
+                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                    for (int i = 1; i < stepCount; i++)
+                    {
+                        Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y + maxHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mPosition", position);
+                        DataBase.ShaderObjs.Start();
+                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                        maxHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                    }
+                    Vector3 UpperBoundary = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, maxHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary - boundOff);
+                }
+                else if (stepCount <= -2)
+                {
+                    float minHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                    Vector3 position1 = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                    DataBase.ShaderObjs.Use();
+                    DataBase.ShaderObjs.SetVector3("mPosition", position1);
+                    DataBase.ShaderObjs.Start();
+                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                    for (int i = 1; i < -stepCount; i++)
+                    {
+                        minHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                        Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mPosition", position);
+                        DataBase.ShaderObjs.Start();
+                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                    }
+                    Vector3 UB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Y, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                    Vector3 LB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.X, -minHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Z);
+                    DataBase.ShaderBoundingBox.Start();
+                    BoundingBox.draw(UB + boundOff, LB - boundOff);
+                }
+                else
+                {
+                    if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderError))
+                    {
+                        DataBase.ShaderObjs.Start();
+                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderError);
+                        DataBase.ShaderBoundingBox.Start();
+                        BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderError].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderError].LowerBoundary - boundOff);
+                    }
+                }
+            }
+            else
+            {
+                DataBase.ShaderBoundingBox.Start();
+                BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+            }
+        }
+
+        private static void RenderGrappleGun(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat, Vector3 position)
+        {
+            Vector4 mColor = Globals.GL_ColorEXTRAS;
+            if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T15_AdaGrappleGun; }
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetGrappleGunFacingAngleRotation(ID));
+            DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetGrappleGunFacingAngleAltRotation(ID));
+            DataBase.ShaderBoundingBox.SetVector3("mPosition", position);
+            if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+            DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+            DataBase.ShaderObjs.Use();
+            DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetGrappleGunFacingAngleRotation(ID));
+            DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetGrappleGunFacingAngleAltRotation(ID));
+            DataBase.ShaderObjs.SetVector3("mPosition", position);
+            if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyGrappleGunPoint))
+            {
+                DataBase.ShaderObjs.Start();
+                DataBase.InternalModels.RenderModel(Consts.ModelKeyGrappleGunPoint);
+                DataBase.ShaderBoundingBox.Start();
+                BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyGrappleGunPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyGrappleGunPoint].LowerBoundary - boundOff);
+            }
+            else
+            {
+                DataBase.ShaderBoundingBox.Start();
+                BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+            }
+        }
+        private static void RenderPosTriggerZoneBox()
+        {
+            if (Globals.RenderItemsITA)
+            {
+                foreach (TreeNode item in DataBase.NodeITA.Nodes)
+                {
+                    RenderPosTriggerZoneBoxSubPart((Object3D)item, DataBase.NodeITA.MethodsForGL);
+                }
+            }
+            if (Globals.RenderEventsAEV)
+            {
+                foreach (TreeNode item in DataBase.NodeAEV.Nodes)
+                {
+                    RenderPosTriggerZoneBoxSubPart((Object3D)item, DataBase.NodeAEV.MethodsForGL);
+                }
+            }
+        }
+
+        private static void RenderPosTriggerZoneBoxSubPart(Object3D item, Class.ObjMethods.SpecialMethodsForGL MethodsForGL)
+        {
+            Vector4 mColor = new Vector4(0, 0, 0, 0);
+            ushort ID = item.ObjLineRef;
+            GroupType Group = item.Group;
+
+            if (Group == GroupType.ITA) { mColor = Globals.GL_ColorITA; }
+            else if (Group == GroupType.AEV) { mColor = Globals.GL_ColorAEV; }
+
+            if (Globals.UseMoreSpecialColors)
+            {
+                mColor = ReturnMoreSpecialColor(MethodsForGL.GetSpecialType(ID), mColor);
+            }
+
+            if (MethodsForGL.GetSpecialType(ID) != SpecialType.T03_Items && Globals.RenderSpecialTriggerZone)
+            {
+                DataBase.ShaderBoundingBox.Use();
+                DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                mColor.W = 0.1f;
+                DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                DataBase.ShaderBoundingBox.Start();
+                if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category01)
+                {
+                    BoundingBox.drawTriggerZone_TransparentSolid(MethodsForGL.GetTriggerZone(ID));
+                }
+                else if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category02)
+                {
+                    Vector2[] v = MethodsForGL.GetCircleTriggerZone(ID);
+                    BoundingBox.drawCircleTriggerZone_TransparentSolid(v[0], v[1], v[2].X);
+                }
+            }
+        }
+
+        private static Vector4 ReturnMoreSpecialColor(SpecialType specialType, Vector4 color)
+        {
+            switch (specialType)
+            {
+                case SpecialType.T00_GeneralPurpose: return Globals.GL_MoreColor_T00_GeneralPurpose;
+                case SpecialType.T01_WarpDoor: return Globals.GL_MoreColor_T01_DoorWarp;
+                case SpecialType.T02_CutSceneEvents: return Globals.GL_MoreColor_T02_CutSceneEvents;
+                case SpecialType.T04_GroupedEnemyTrigger: return Globals.GL_MoreColor_T04_GroupedEnemyTrigger;
+                case SpecialType.T05_Message: return Globals.GL_MoreColor_T05_Message;
+                case SpecialType.T08_TypeWriter: return Globals.GL_MoreColor_T08_TypeWriter;
+                case SpecialType.T0A_DamagesThePlayer: return Globals.GL_MoreColor_T0A_DamagesThePlayer;
+                case SpecialType.T0B_FalseCollision: return Globals.GL_MoreColor_T0B_FalseCollision;
+                case SpecialType.T0D_Unknown: return Globals.GL_MoreColor_T0D_Unknown;
+                case SpecialType.T0E_Crouch: return Globals.GL_MoreColor_T0E_Crouch;
+                case SpecialType.T10_FixedLadderClimbUp: return Globals.GL_MoreColor_T10_FixedLadderClimbUp;
+                case SpecialType.T11_ItemDependentEvents: return Globals.GL_MoreColor_T11_ItemDependentEvents;
+                case SpecialType.T12_AshleyHideCommand: return Globals.GL_MoreColor_T12_AshleyHideCommand;
+                case SpecialType.T13_LocalTeleportation: return Globals.GL_MoreColor_T13_LocalTeleportation;
+                case SpecialType.T14_UsedForElevators: return Globals.GL_MoreColor_T14_UsedForElevators;
+                case SpecialType.T15_AdaGrappleGun: return Globals.GL_MoreColor_T15_AdaGrappleGun;
+            }
+            return color;
+        }
+
+        #endregion
+        #region Select mode Render
+        /// <summary>
+        /// Renders the same as normal but uses solid colors for bounding boxes only (for object selection).
+        /// </summary>
+        public static void RenderToSelect(ref Matrix4 camMtx, ref Matrix4 ProjMatrix)
+        {
+            GL.ClearColor(System.Drawing.Color.White);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            if (Globals.RenderRoom && DataBase.SelectedRoom != null)
+            {
+                DataBase.ShaderRoom.Use();
+                DataBase.ShaderRoom.SetMatrix4("view", camMtx);
+                DataBase.ShaderRoom.SetMatrix4("projection", ProjMatrix);
+                DataBase.ShaderRoom.Start();
+                DataBase.SelectedRoom.Render_Solid();
+            }
+
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetMatrix4("view", camMtx);
+            DataBase.ShaderBoundingBox.SetMatrix4("projection", ProjMatrix);
+
+            if (Globals.RenderEnemyESL) { RenderEnemyESL_ToSelect(); }
+            if (Globals.RenderExtraObjs) { RenderExtras_ToSelect(); }
+            if (Globals.RenderEventsAEV) { RenderAEV_ToSelect(); }
+            if (Globals.RenderItemsITA) { RenderITA_ToSelect(); }
+            if (Globals.RenderEtcmodelETS) { RenderEtcModelETS_ToSelect(); }
+        }
+
+        private static void RenderEnemyESL_ToSelect()
+        {
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+
+            foreach (TreeNode item in DataBase.NodeESL.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+                ushort EnemiesID = DataBase.NodeESL.MethodsForGL.GetEnemyModelID(ID);
+                ushort EnemyRoom = DataBase.NodeESL.MethodsForGL.GetEnemyRoom(ID);
+                byte EnableState = DataBase.NodeESL.MethodsForGL.GetEnableState(ID);
+
+                byte[] partColor = BitConverter.GetBytes(ID);
+                Vector4 mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)1 / 255, 1f);
+
+                if (Globals.RenderDisabledEnemy || EnableState != 0)
+                {
+                    if (Globals.RenderDontShowOnlyDefinedRoom || EnemyRoom == Globals.RenderEnemyFromDefinedRoom)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", DataBase.NodeESL.MethodsForGL.GetRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(DataBase.NodeESL.MethodsForGL.GetOldRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", DataBase.NodeESL.MethodsForGL.GetPosition(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+
+                        if (!DataBase.EnemiesIDs.ContainsKey(EnemiesID))
+                        {
+                            string eId = EnemiesID.ToString("X4");
+                            eId = eId[0].ToString() + eId[1].ToString() + "FF";
+                            EnemiesID = ushort.Parse(eId, System.Globalization.NumberStyles.HexNumber);
+                        }
+
+                        DataBase.ShaderBoundingBox.Start();
+                        if (DataBase.EnemiesIDs.ContainsKey(EnemiesID) && !DataBase.EnemiesIDs[EnemiesID].UseInternalModel && DataBase.EnemiesModels.Models.ContainsKey(DataBase.EnemiesIDs[EnemiesID].ModelKey))
+                        {
+                            BoundingBox.draw_solid(DataBase.EnemiesModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].UpperBoundary + boundOff, DataBase.EnemiesModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].LowerBoundary - boundOff);
+                        }
+                        else if (DataBase.EnemiesIDs.ContainsKey(EnemiesID) && DataBase.EnemiesIDs[EnemiesID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.EnemiesIDs[EnemiesID].ModelKey))
+                        {
+                            BoundingBox.draw_solid(DataBase.InternalModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].UpperBoundary + boundOff, DataBase.InternalModels.Models[DataBase.EnemiesIDs[EnemiesID].ModelKey].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            BoundingBox.draw_solid(boundNoneEnemy, -boundNoneEnemy);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void RenderEtcModelETS_ToSelect()
+        {
+            foreach (TreeNode item in DataBase.NodeETS.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+                byte[] partColor = BitConverter.GetBytes(ID);
+                Vector4 mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)2 / 255, 1f);
+
+                Vector3 boundOffFix = boundOff;
+                Vector3 scale = DataBase.NodeETS.MethodsForGL.GetScale(ID);
+                if (scale.X < 0) { boundOffFix.X *= -1; }
+                if (scale.Y < 0) { boundOffFix.Y *= -1; }
+                if (scale.Z < 0) { boundOffFix.Z *= -1; }
+
+                DataBase.ShaderBoundingBox.Use();
+                DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderBoundingBox.SetMatrix4("mRotation", DataBase.NodeETS.MethodsForGL.GetAngle(ID));
+                DataBase.ShaderBoundingBox.SetAltRotation(DataBase.NodeETS.MethodsForGL.GetOldRotation(ID));
+                DataBase.ShaderBoundingBox.SetVector3("mPosition", DataBase.NodeETS.MethodsForGL.GetPosition(ID));
+                DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+
+                ushort EtcModelID = DataBase.NodeETS.MethodsForGL.GetEtcModelID(ID);
+
+                DataBase.ShaderBoundingBox.Start();
+                if (DataBase.EtcModelIDs.ContainsKey(EtcModelID) && !DataBase.EtcModelIDs[EtcModelID].UseInternalModel && DataBase.EtcModels.Models.ContainsKey(DataBase.EtcModelIDs[EtcModelID].ModelKey))
+                {
+                    BoundingBox.draw_solid((DataBase.EtcModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].UpperBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) + boundOffFix, (DataBase.EtcModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].LowerBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) - boundOffFix);
+                }
+                else if (DataBase.EtcModelIDs.ContainsKey(EtcModelID) && DataBase.EtcModelIDs[EtcModelID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.EtcModelIDs[EtcModelID].ModelKey))
+                {
+                    BoundingBox.draw_solid((DataBase.InternalModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].UpperBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) + boundOffFix, (DataBase.InternalModels.Models[DataBase.EtcModelIDs[EtcModelID].ModelKey].LowerBoundary * DataBase.NodeETS.MethodsForGL.GetScale(ID)) - boundOffFix);
+                }
+                else
+                {
+                    BoundingBox.draw_solid(boundNoneEtcModel, -boundNoneEtcModel);
+                }
+            }
+        }
+
+        private static void RenderITA_ToSelect()
+        {
+            foreach (TreeNode item in DataBase.NodeITA.Nodes)
+            {
+                RenderSpecial_ToSelect((Object3D)item, DataBase.NodeITA.MethodsForGL);
+            }
+        }
+
+        private static void RenderAEV_ToSelect()
+        {
+            foreach (TreeNode item in DataBase.NodeAEV.Nodes)
+            {
+                RenderSpecial_ToSelect((Object3D)item, DataBase.NodeAEV.MethodsForGL);
+            }
+        }
+        private static void RenderSpecial_ToSelect(Object3D item, Class.ObjMethods.SpecialMethodsForGL MethodsForGL)
+        {
+            ushort ID = item.ObjLineRef;
+            GroupType Group = item.Group;
+            byte[] partColor = BitConverter.GetBytes(ID);
+            Vector4 mColor = new Vector4(0, 0, 0, 1f);
+
+            if (Group == GroupType.ITA)
+            {
+                mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)3 / 255, 1f);
+            }
+            else if (Group == GroupType.AEV)
+            {
+                mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)4 / 255, 1f);
+            }
+
+            if (MethodsForGL.GetSpecialType(ID) == SpecialType.T03_Items)
+            {
+                if (Globals.RenderItemTriggerZone)
+                {
+                    DataBase.ShaderBoundingBox.Use();
+                    DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                    DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                    DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                    DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                    DataBase.ShaderBoundingBox.Start();
+                    if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category01)
+                    {
+                        BoundingBox.drawTriggerZone_solid(MethodsForGL.GetTriggerZone(ID));
+                    }
+                    else if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category02)
+                    {
+                        Vector2[] v = MethodsForGL.GetCircleTriggerZone(ID);
+                        BoundingBox.drawCircleTriggerZone_solid(v[0], v[1], v[2].X);
+                    }
+                }
+
+                DataBase.ShaderBoundingBox.Use();
+                DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetItemRotation(ID));
+                DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetItemAltRotation(ID));
+                DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetItemPosition(ID));
+                DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+
+                ushort item_ID = MethodsForGL.GetItemModelID(ID);
+
+                DataBase.ShaderBoundingBox.Start();
+                if (DataBase.ItemsIDs.ContainsKey(item_ID) && !DataBase.ItemsIDs[item_ID].UseInternalModel && DataBase.ItemsModels.Models.ContainsKey(DataBase.ItemsIDs[item_ID].ModelKey))
+                {
+                    BoundingBox.draw_solid(DataBase.ItemsModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].UpperBoundary + boundOff, DataBase.ItemsModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].LowerBoundary - boundOff);
+                }
+                else if (DataBase.ItemsIDs.ContainsKey(item_ID) && DataBase.ItemsIDs[item_ID].UseInternalModel && DataBase.InternalModels.Models.ContainsKey(DataBase.ItemsIDs[item_ID].ModelKey))
+                {
+                    BoundingBox.draw_solid(DataBase.InternalModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].UpperBoundary + boundOff, DataBase.InternalModels.Models[DataBase.ItemsIDs[item_ID].ModelKey].LowerBoundary - boundOff);
+                }
+                else
+                {
+                    BoundingBox.draw_solid(boundNoneItem, -boundNoneItem);
+                }
+            }
+            else
+            {
+                if (Globals.RenderSpecialTriggerZone)
+                {
+                    DataBase.ShaderBoundingBox.Use();
+                    DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                    DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                    DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                    DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                    DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                    DataBase.ShaderBoundingBox.Start();
+                    if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category01)
+                    {
+                        BoundingBox.drawTriggerZone_solid(MethodsForGL.GetTriggerZone(ID));
+                    }
+                    else if (MethodsForGL.GetZoneCategory(ID) == SpecialZoneCategory.Category02)
+                    {
+                        Vector2[] v = MethodsForGL.GetCircleTriggerZone(ID);
+                        BoundingBox.drawCircleTriggerZone_solid(v[0], v[1], v[2].X);
+                    }
+                }
+            }
+        }
+
+        private static void RenderExtras_ToSelect()
+        {
+            foreach (TreeNode item in DataBase.NodeEXTRAS.Nodes)
+            {
+                ushort ID = ((Object3D)item).ObjLineRef;
+                var association = DataBase.Extras.AssociationList[ID];
+                if (association.FileFormat == SpecialFileFormat.AEV && Globals.RenderEventsAEV)
+                {
+                    RenderExtrasSubPart_ToSelect((Object3D)item, DataBase.FileAEV.ExtrasMethodsForGL, association.LineID, association.SubObjID, SpecialFileFormat.AEV);
+                }
+                else if (association.FileFormat == SpecialFileFormat.ITA && Globals.RenderItemsITA)
+                {
+                    RenderExtrasSubPart_ToSelect((Object3D)item, DataBase.FileITA.ExtrasMethodsForGL, association.LineID, association.SubObjID, SpecialFileFormat.ITA);
+                }
+            }
+        }
+        private static void RenderExtrasSubPart_ToSelect(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat)
+        {
+            SpecialType specialType = MethodsForGL.GetSpecialType(ID);
+            ushort ExtraID = item.ObjLineRef;
+            byte[] partColor = BitConverter.GetBytes(ExtraID);
+            Vector4 mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)5 / 255, 1f);
+
+            switch (specialType)
+            {
+                case SpecialType.T01_WarpDoor:
+                    if (Globals.RenderExtraWarpDoor)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetWarpRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetWarpAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderBoundingBox.Start();
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyWarpPoint))
+                        {
+                            BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyWarpPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyWarpPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            BoundingBox.draw_solid(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
+                case SpecialType.T13_LocalTeleportation:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderBoundingBox.Start();
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLocalTeleportationPoint))
+                        {
+                            BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyLocalTeleportationPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLocalTeleportationPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            BoundingBox.draw_solid(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
+                case SpecialType.T10_FixedLadderClimbUp:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderPoint) && DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderObj))
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].LowerBoundary - boundOff);
+
+                            sbyte stepCount = MethodsForGL.GetLadderStepCount(ID);
+                            if (stepCount >= 2)
+                            {
+                                float maxHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y * stepCount;
+                                Vector3 UB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, maxHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                                DataBase.ShaderBoundingBox.Start();
+                                BoundingBox.draw_solid(UB + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary - boundOff);
+                            }
+                            else if (stepCount <= -2)
+                            {
+                                Vector3 UB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Y, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                                float minHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y * (-stepCount);
+                                Vector3 LB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.X, (-minHeight), DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Z);
+                                DataBase.ShaderBoundingBox.Start();
+                                BoundingBox.draw_solid(UB + boundOff, LB - boundOff);
+                            }
+                            else
+                            {
+                                if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderError))
+                                {
+                                    DataBase.ShaderBoundingBox.Start();
+                                    BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyLadderError].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderError].LowerBoundary - boundOff);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw_solid(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
+                case SpecialType.T12_AshleyHideCommand:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", Matrix4.Identity);
+                        DataBase.ShaderBoundingBox.SetAltRotation(OldRotation.Identity);
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetAshleyPoint(ID));
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderBoundingBox.Start();
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyAshleyPoint))
+                        {
+                            BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyAshleyPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyAshleyPoint].LowerBoundary - boundOff);
+                        }
+                        else
+                        {
+                            BoundingBox.draw_solid(boundNoneExtras, -boundNoneExtras);
+                        }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", Vector3.Zero);
+                        DataBase.ShaderBoundingBox.Start();
+                        BoundingBox.drawTriggerZone_solid(MethodsForGL.GetAshleyHidingZoneCorner(ID));
+                    }
+                    break;
+                case SpecialType.T15_AdaGrappleGun:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        if (SubId == 0) { RenderGrappleGun_ToSelect(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetFirtPosition(ID)); }
+                        else if (SubId == 1) { RenderGrappleGun_ToSelect(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetGrappleGunEndPosition(ID)); }
+                        else if (SubId == 2 && MethodsForGL.GetGrappleGunParameter3(ID) != 0) { RenderGrappleGun_ToSelect(item, MethodsForGL, ID, SubId, FileFormat, MethodsForGL.GetGrappleGunThirdPosition(ID)); }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private static void RenderGrappleGun_ToSelect(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat, Vector3 position)
+        {
+            ushort ExtraID = item.ObjLineRef;
+            byte[] partColor = BitConverter.GetBytes(ExtraID);
+            Vector4 mColor = new Vector4((float)partColor[0] / 255, (float)partColor[1] / 255, (float)5 / 255, 1f);
+
+            DataBase.ShaderBoundingBox.Use();
+            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+            DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetGrappleGunFacingAngleRotation(ID));
+            DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetGrappleGunFacingAngleAltRotation(ID));
+            DataBase.ShaderBoundingBox.SetVector3("mPosition", position);
+            DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+            DataBase.ShaderBoundingBox.Start();
+            if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyGrappleGunPoint))
+            {
+                BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyGrappleGunPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyGrappleGunPoint].LowerBoundary - boundOff);
+            }
+            else
+            {
+                BoundingBox.draw_solid(boundNoneExtras, -boundNoneExtras);
+            }
+        }
+
+        #endregion
+
+    }
+}
