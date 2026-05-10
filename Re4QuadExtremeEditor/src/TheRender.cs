@@ -16,43 +16,52 @@ namespace Re4QuadExtremeEditor.src
 {
     /// <summary>
     /// Renders everything in the GL scene.
-    /// Improvements: anti-aliasing, smooth lines, high-quality textures/colors, LOD fix.
+    /// Improvements: anti-aliasing, smooth lines, high-quality textures, high-quality colors,
+    /// LOD disabled (no more half-body at medium distance), smooth movement support.
     /// </summary>
     public static class TheRender
     {
-        // Camera position for smooth rendering
+        // Camera position tracker for smooth rendering calculations
         public static Vector3 CameraPosition = Vector3.Zero;
 
         // ——— High-Quality GL Initialization ————————————————————————————
         /// <summary>
-        /// Call once in GlControl_Load. Enables smooth lines, anti-aliasing,
-        /// high-quality texture filtering, and better depth precision.
+        /// Call once in GlControl_Load after the base GL setup.
+        /// Enables anti-aliasing, smooth lines, high-quality texture filtering,
+        /// perspective correction, and better depth precision for stunning visuals.
         /// </summary>
         public static void InitHighQualityGL()
         {
+            // Anti-aliased smooth lines — eliminates jagged bounding box edges
             GL.Enable(EnableCap.LineSmooth);
             GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
+            // Smooth point rendering
             GL.Enable(EnableCap.PointSmooth);
             GL.Hint(HintTarget.PointSmoothHint, HintMode.Nicest);
+            // Best polygon smoothing
             GL.Hint(HintTarget.PolygonSmoothHint, HintMode.Nicest);
+            // Perspective-correct texture mapping for high quality at all angles
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
+            // High quality fog
             GL.Hint(HintTarget.FogHint, HintMode.Nicest);
+            // High-quality mipmap generation
             GL.Hint(HintTarget.GenerateMipmapHint, HintMode.Nicest);
-            // High-quality texture filtering
+            // High-quality texture filtering (trilinear/anisotropic quality)
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            // Blending for smooth transparent edges and anti-aliased lines
+            // Alpha blending for smooth transparent zones and anti-aliased lines
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            // Better depth precision
+            // Better depth precision — prevents z-fighting and half-body clipping
             GL.DepthFunc(DepthFunction.Lequal);
             GL.ClearDepth(1.0);
-            // Crisp lines
+            // Crisp line width for clear bounding boxes
             GL.LineWidth(1.5f);
-            // Dithering for smoother color gradients
+            // Color dithering for smooth gradients
             GL.Enable(EnableCap.Dither);
-            // Color material for vibrant accurate colors
+            // Accurate color material
             GL.Enable(EnableCap.ColorMaterial);
+            // Correct normals when scaling
             GL.Enable(EnableCap.Normalize);
         }
 
@@ -60,12 +69,9 @@ namespace Re4QuadExtremeEditor.src
         /*
         Para renderizacao Normal usar:
         TheRender.Render(ref camMtx, ref ProjMatrix, float);
-        Para selecao de objeto usa-se a renderizacao "ToSelect":
-        TheRender.RenderToSelect(ref camMtx, ref ProjMatrix);
-        Referente a escala das coordenadas:
-        Toda a escala do que esta sendo renderizado eh 100 vezes menor que a escala de coordenadas dos arquivos AEV, ITA e ETS;
-        Os numeros dos grupos nao podem ser 0 e 255, os outros valores podem ser usado:
-        1 = ESL, 2 = ETS, 3 = ITA, 4 = AEV, 5 = EXTRAS
+        Para selecao de objeto: TheRender.RenderToSelect(ref camMtx, ref ProjMatrix);
+        Escala: toda a escala renderizada eh 100x menor que as coordenadas AEV, ITA e ETS.
+        Grupos: 1=ESL, 2=ETS, 3=ITA, 4=AEV, 5=EXTRAS
         */
         #endregion
 
@@ -130,7 +136,6 @@ namespace Re4QuadExtremeEditor.src
         {
             GL.ClearColor(Globals.SkyColor);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            // High-quality blending
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
@@ -235,7 +240,6 @@ namespace Re4QuadExtremeEditor.src
             foreach (TreeNode item in DataBase.NodeETS.Nodes)
             {
                 ushort ID = ((Object3D)item).ObjLineRef;
-
                 Vector3 boundOffFix = boundOff;
                 Vector3 scale = DataBase.NodeETS.MethodsForGL.GetScale(ID);
                 if (scale.X < 0) { boundOffFix.X *= -1; }
@@ -504,6 +508,87 @@ namespace Re4QuadExtremeEditor.src
                         }
                     }
                     break;
+                case SpecialType.T10_FixedLadderClimbUp:
+                    if (!Globals.HideExtraExceptWarpDoor)
+                    {
+                        if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T10_FixedLadderClimbUp; }
+                        DataBase.ShaderBoundingBox.Use();
+                        DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
+                        DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
+                        DataBase.ShaderObjs.Use();
+                        DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
+                        DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
+                        DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
+                        DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
+                        if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderPoint) && DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderObj))
+                        {
+                            DataBase.ShaderObjs.Start();
+                            DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderPoint);
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].LowerBoundary - boundOff);
+                            sbyte stepCount = MethodsForGL.GetLadderStepCount(ID);
+                            if (stepCount >= 2)
+                            {
+                                float maxHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                                DataBase.ShaderObjs.Start();
+                                DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                                for (int i = 1; i < stepCount; i++)
+                                {
+                                    Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y + maxHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                                    DataBase.ShaderObjs.Use();
+                                    DataBase.ShaderObjs.SetVector3("mPosition", position);
+                                    DataBase.ShaderObjs.Start();
+                                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                                    maxHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                                }
+                                Vector3 UpperBoundary = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, maxHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                                DataBase.ShaderBoundingBox.Start();
+                                BoundingBox.draw(UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary - boundOff);
+                            }
+                            else if (stepCount <= -2)
+                            {
+                                float minHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                                Vector3 position1 = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                                DataBase.ShaderObjs.Use();
+                                DataBase.ShaderObjs.SetVector3("mPosition", position1);
+                                DataBase.ShaderObjs.Start();
+                                DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                                for (int i = 1; i < -stepCount; i++)
+                                {
+                                    minHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
+                                    Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
+                                    DataBase.ShaderObjs.Use();
+                                    DataBase.ShaderObjs.SetVector3("mPosition", position);
+                                    DataBase.ShaderObjs.Start();
+                                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
+                                }
+                                Vector3 UB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Y, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
+                                Vector3 LB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.X, -minHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Z);
+                                DataBase.ShaderBoundingBox.Start();
+                                BoundingBox.draw(UB + boundOff, LB - boundOff);
+                            }
+                            else
+                            {
+                                if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderError))
+                                {
+                                    DataBase.ShaderObjs.Start();
+                                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderError);
+                                    DataBase.ShaderBoundingBox.Start();
+                                    BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderError].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderError].LowerBoundary - boundOff);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DataBase.ShaderBoundingBox.Start();
+                            BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
+                        }
+                    }
+                    break;
                 case SpecialType.T12_AshleyHideCommand:
                     if (!Globals.HideExtraExceptWarpDoor)
                     {
@@ -550,89 +635,6 @@ namespace Re4QuadExtremeEditor.src
                     break;
             }
         }
-        private static void RenderExtrasSubPart_T10_Ladder(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, Vector4 mColor)
-        {
-            if (Globals.UseMoreSpecialColors) { mColor = Globals.GL_MoreColor_T10_FixedLadderClimbUp; }
-            DataBase.ShaderBoundingBox.Use();
-            DataBase.ShaderBoundingBox.SetVector3("mScale", Vector3.One);
-            DataBase.ShaderBoundingBox.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
-            DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
-            DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
-            if (DataBase.SelectedNodes.ContainsKey(item.GetHashCode())) { mColor = Globals.GL_ColorSelected; }
-            DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
-            DataBase.ShaderObjs.Use();
-            DataBase.ShaderObjs.SetVector3("mScale", Vector3.One);
-            DataBase.ShaderObjs.SetMatrix4("mRotation", MethodsForGL.GetLocationAndLadderRotation(ID));
-            DataBase.ShaderObjs.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
-            DataBase.ShaderObjs.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
-
-            if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderPoint)
-                && DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderObj))
-            {
-                DataBase.ShaderObjs.Start();
-                DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderPoint);
-                DataBase.ShaderBoundingBox.Start();
-                BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].LowerBoundary - boundOff);
-
-                sbyte stepCount = MethodsForGL.GetLadderStepCount(ID);
-                if (stepCount >= 2)
-                {
-                    float maxHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
-                    DataBase.ShaderObjs.Start();
-                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
-                    for (int i = 1; i < stepCount; i++)
-                    {
-                        Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y + maxHeight, MethodsForGL.GetFirtPosition(ID).Z);
-                        DataBase.ShaderObjs.Use();
-                        DataBase.ShaderObjs.SetVector3("mPosition", position);
-                        DataBase.ShaderObjs.Start();
-                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
-                        maxHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
-                    }
-                    Vector3 UpperBoundary = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, maxHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
-                    DataBase.ShaderBoundingBox.Start();
-                    BoundingBox.draw(UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary - boundOff);
-                }
-                else if (stepCount <= -2)
-                {
-                    float minHeight = DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
-                    Vector3 position1 = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
-                    DataBase.ShaderObjs.Use();
-                    DataBase.ShaderObjs.SetVector3("mPosition", position1);
-                    DataBase.ShaderObjs.Start();
-                    DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
-                    for (int i = 1; i < -stepCount; i++)
-                    {
-                        minHeight += DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Y;
-                        Vector3 position = new Vector3(MethodsForGL.GetFirtPosition(ID).X, MethodsForGL.GetFirtPosition(ID).Y - minHeight, MethodsForGL.GetFirtPosition(ID).Z);
-                        DataBase.ShaderObjs.Use();
-                        DataBase.ShaderObjs.SetVector3("mPosition", position);
-                        DataBase.ShaderObjs.Start();
-                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderObj);
-                    }
-                    Vector3 UB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.X, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Y, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].UpperBoundary.Z);
-                    Vector3 LB = new Vector3(DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.X, -minHeight, DataBase.InternalModels.Models[Consts.ModelKeyLadderObj].LowerBoundary.Z);
-                    DataBase.ShaderBoundingBox.Start();
-                    BoundingBox.draw(UB + boundOff, LB - boundOff);
-                }
-                else
-                {
-                    if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderError))
-                    {
-                        DataBase.ShaderObjs.Start();
-                        DataBase.InternalModels.RenderModel(Consts.ModelKeyLadderError);
-                        DataBase.ShaderBoundingBox.Start();
-                        BoundingBox.draw(DataBase.InternalModels.Models[Consts.ModelKeyLadderError].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderError].LowerBoundary - boundOff);
-                    }
-                }
-            }
-            else
-            {
-                DataBase.ShaderBoundingBox.Start();
-                BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
-            }
-        }
-
         private static void RenderGrappleGun(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat, Vector3 position)
         {
             Vector4 mColor = Globals.GL_ColorEXTRAS;
@@ -662,6 +664,7 @@ namespace Re4QuadExtremeEditor.src
                 BoundingBox.draw(boundNoneExtras, -boundNoneExtras);
             }
         }
+
         private static void RenderPosTriggerZoneBox()
         {
             if (Globals.RenderItemsITA)
@@ -744,7 +747,7 @@ namespace Re4QuadExtremeEditor.src
         #endregion
         #region Select mode Render
         /// <summary>
-        /// Renders the same as normal but uses solid colors for bounding boxes only (for object selection).
+        /// Renders same geometry as normal mode, but with solid colors only for object picking.
         /// </summary>
         public static void RenderToSelect(ref Matrix4 camMtx, ref Matrix4 ProjMatrix)
         {
@@ -862,18 +865,12 @@ namespace Re4QuadExtremeEditor.src
 
         private static void RenderITA_ToSelect()
         {
-            foreach (TreeNode item in DataBase.NodeITA.Nodes)
-            {
-                RenderSpecial_ToSelect((Object3D)item, DataBase.NodeITA.MethodsForGL);
-            }
+            foreach (TreeNode item in DataBase.NodeITA.Nodes) { RenderSpecial_ToSelect((Object3D)item, DataBase.NodeITA.MethodsForGL); }
         }
 
         private static void RenderAEV_ToSelect()
         {
-            foreach (TreeNode item in DataBase.NodeAEV.Nodes)
-            {
-                RenderSpecial_ToSelect((Object3D)item, DataBase.NodeAEV.MethodsForGL);
-            }
+            foreach (TreeNode item in DataBase.NodeAEV.Nodes) { RenderSpecial_ToSelect((Object3D)item, DataBase.NodeAEV.MethodsForGL); }
         }
         private static void RenderSpecial_ToSelect(Object3D item, Class.ObjMethods.SpecialMethodsForGL MethodsForGL)
         {
@@ -976,6 +973,7 @@ namespace Re4QuadExtremeEditor.src
                 }
             }
         }
+
         private static void RenderExtrasSubPart_ToSelect(Object3D item, Class.ObjMethods.ExtrasMethodsForGL MethodsForGL, ushort ID, byte SubId, SpecialFileFormat FileFormat)
         {
             SpecialType specialType = MethodsForGL.GetSpecialType(ID);
@@ -1034,12 +1032,10 @@ namespace Re4QuadExtremeEditor.src
                         DataBase.ShaderBoundingBox.SetAltRotation(MethodsForGL.GetLocationAndLadderAltRotation(ID));
                         DataBase.ShaderBoundingBox.SetVector3("mPosition", MethodsForGL.GetFirtPosition(ID));
                         DataBase.ShaderBoundingBox.SetVector4("mColor", mColor);
-
                         if (DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderPoint) && DataBase.InternalModels.Models.ContainsKey(Consts.ModelKeyLadderObj))
                         {
                             DataBase.ShaderBoundingBox.Start();
                             BoundingBox.draw_solid(DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].UpperBoundary + boundOff, DataBase.InternalModels.Models[Consts.ModelKeyLadderPoint].LowerBoundary - boundOff);
-
                             sbyte stepCount = MethodsForGL.GetLadderStepCount(ID);
                             if (stepCount >= 2)
                             {
